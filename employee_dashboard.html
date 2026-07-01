@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة تحكم الموظف - الخدمات الإجتماعية توقرت</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+      tailwind.config = {
+          theme: {
+              extend: {
+                  fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                  colors: {
+                      primary: '#1976d2',
+                      primaryDark: '#0d47a1',
+                      accent: '#fb8c00'
+                  }
+              }
+          }
+      }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .service-card {
+        @apply bg-white/90 backdrop-blur-sm border border-white/60 rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-300 shadow-[0_8px_20px_rgba(0,0,0,0.05)] hover:-translate-y-2 hover:shadow-[0_15px_30px_rgba(25,118,210,0.15)] hover:border-primary/30 relative;
+      }
+      .service-icon {
+        @apply w-20 h-20 bg-blue-50 text-primary rounded-2xl flex items-center justify-center text-4xl shadow-inner transition-colors duration-300;
+      }
+      .service-card:hover .service-icon {
+        @apply bg-primary text-white;
+      }
+      .service-title {
+        @apply font-black text-slate-800 text-lg text-center;
+      }
+      .new-badge {
+        @apply absolute -top-3 -right-3 bg-green-500 text-white text-[12px] font-black px-4 py-1.5 rounded-full shadow-lg border-2 border-white animate-pulse z-10;
+      }
+      .input-wrapper {
+        @apply relative mb-3;
+      }
+      .input-icon {
+        @apply absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-slate-400 text-sm;
+      }
+      .modern-input {
+        @apply w-full pr-10 pl-3 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all font-bold text-slate-800 placeholder-slate-400 text-sm shadow-sm;
+      }
+      .form-label {
+        @apply text-[11px] font-black text-primaryDark mb-1.5 block drop-shadow-sm;
+      }
+      .readonly-badge {
+        @apply bg-slate-100 border border-slate-200 text-slate-600 text-sm font-bold py-2.5 px-3 rounded-xl w-full text-right truncate cursor-not-allowed select-none;
+      }
+      .btn-primary {
+        @apply w-full bg-gradient-to-l from-primaryDark to-primary text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2;
+      }
+    }
+
+    body { overflow-x: hidden; background-color: #f8fafc; }
+    
+    .header-curve {
+      background: linear-gradient(135deg, #0d47a1 0%, #1976d2 100%);
+      border-bottom-left-radius: 40px;
+      border-bottom-right-radius: 40px;
+      box-shadow: 0 10px 30px rgba(13, 71, 161, 0.15);
+      position: relative;
+    }
+    
+    .avatar-img {
+      border: 4px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+ /* الصورة الدائرية */
+    .emp-profile-pic {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 4px solid white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        object-fit: cover;
+        background: #f1f5f9;
+        display: block; /* ضمان ظهورها فوراً */
+    }
+
+    /* ضمان تموضع النقطة بدقة */
+    .relative { position: relative; }
+    .absolute { position: absolute; }
+
+
+  </style>
+</head>
+<body class="font-cairo text-slate-800 min-h-screen flex flex-col selection:bg-primary selection:text-white relative">
+
+  <div class="fixed inset-0 z-[-1] opacity-5 pointer-events-none" style="background-image: url('https://www.transparenttextures.com/patterns/symphony.png');"></div>
+
+  <header class="header-curve pt-12 pb-10 px-4 text-center z-10">
+    <button onclick="logout()" class="absolute top-6 left-6 text-white/80 hover:text-white bg-white/10 hover:bg-red-500 transition-all rounded-full w-10 h-10 flex items-center justify-center" title="تسجيل الخروج">
+        <i class="fa-solid fa-power-off"></i>
+    </button>
+    
+    <div class="relative inline-block mb-3">
+      <img id="empProfileImg" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="صورة المستخدم" class="emp-profile-pic avatar-img bg-white object-cover mx-auto">
+      <div id="statusDot" class="absolute bottom-2 right-2 w-5 h-5 bg-green-500 border-[3px] border-white rounded-full"></div>
+    </div>
+    
+    <h1 id="employeeNameDisplay" class="text-3xl font-black text-white mb-3 drop-shadow-md">جاري التحميل...</h1>
+    
+    <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/30 w-max mx-auto">
+        <i class="fa-solid fa-id-badge text-accent text-xs"></i>
+        <span id="employeeIdDisplay" class="font-bold text-white tracking-widest text-xs">---------</span>
+    </div>
+  </header>
+
+  <main class="flex-grow w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 -mt-6 z-20">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+      <div class="service-card !border-accent/30 !bg-orange-50/50" onclick="openProfileModal()">
+        <div class="service-icon !bg-orange-100 !text-accent"><i class="fa-solid fa-user-pen"></i></div>
+        <h3 class="service-title">بياناتي الشخصية</h3>
+      </div>
+
+      <div class="service-card" id="tripsService" onclick="navigateWithWarning('الرحلات', 'employe_ins_voyage.html', 'rahalate')">
+        <div class="service-icon"><i class="fa-solid fa-bus"></i></div>
+        <h3 class="service-title">الرحلات</h3>
+      </div>
+
+      <div class="service-card" id="umrahService" onclick="navigateWithWarning('العمرة', 'employe_ins_omra.html', 'omra')">
+        <div class="service-icon"><i class="fa-solid fa-kaaba"></i></div>
+        <h3 class="service-title">العمرة</h3>
+      </div>
+
+      <div class="service-card" id="sectorChildrenTripsService" onclick="navigateWithWarning('رحلات أبناء القطاع', 'employe_child_ins_voyage.html', 'abnaa_rahalate')">
+        <div class="service-icon"><i class="fa-solid fa-child-reaching"></i></div>
+        <h3 class="service-title">رحلات أبناء القطاع</h3>
+      </div>
+
+      <div class="service-card" id="campsService" onclick="navigateWithWarning('المخيمات الصيفية', 'employe_ins_coping.html', 'mokhayem')">
+        <div class="service-icon"><i class="fa-solid fa-umbrella-beach"></i></div>
+        <h3 class="service-title">المخيمات الصيفية</h3>
+      </div>
+
+      <div class="service-card" id="sectorChildrenQuranService" onclick="navigateWithWarning('مسابقة القرآن الكريم', 'employe_child_ins_quran.html', 'abnaa_quran')">
+        <div class="service-icon"><i class="fa-solid fa-book-quran"></i></div>
+        <h3 class="service-title">مسابقة القرآن الكريم</h3>
+      </div>
+
+      <div class="service-card" id="socialLoansService" onclick="openLoansModal()">
+        <div class="service-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+        <h3 class="service-title">السلف الإجتماعية</h3>
+      </div>
+
+
+      <div class="service-card" onclick="window.open('#', '_blank')">
+        <div class="service-icon"><i class="fa-solid fa-file-pdf"></i></div>
+        <h3 class="service-title">استمارات الخدمات</h3>
+      </div>
+
+      <div class="service-card" onclick="window.open('https://drive.google.com/file/d/1WLp0ZncafrqI30LOHx6tANc51HRccmLS/view?usp=sharing', '_blank')">
+        <div class="service-icon"><i class="fa-solid fa-gavel"></i></div>
+        <h3 class="service-title">الضوابط العامة</h3>
+      </div>
+
+      
+       <div class="service-card" id="btnLottery" onclick="navigateWithWarning('البث المباشر للقرعة', 'employee_live.html', 'lottery')" style="display: none;">
+        <div class="service-icon !bg-red-50 !text-red-600"><i class="fa-solid fa-tower-broadcast"></i></div>
+        <h3 class="service-title">البث المباشر للقرعة</h3>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="bg-primaryDark text-white text-center py-6 font-bold text-sm mt-auto">
+    © 2026 - اللجنة الولائية للخدمات الاجتماعية لعمال التربية لولاية توقرت
+  </footer>
+
+  <!-- نافذة "بياناتي الشخصية" (Modal) المتقدمة -->
+  <div id="profileModal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl max-h-[95vh] flex flex-col overflow-hidden animate-[fadeIn_0.3s_ease-out]">
+        
+        <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+            <h2 class="text-xl font-black text-primaryDark flex items-center gap-2">
+                <i class="fa-solid fa-user-pen text-accent"></i> تعديل بياناتي الشخصية والمهنية
+            </h2>
+            <button onclick="closeProfileModal()" class="w-8 h-8 rounded-full bg-slate-200 text-slate-600 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto custom-scrollbar flex-grow bg-white">
+            
+            <h3 class="text-xs font-black text-primary border-b border-primary/20 pb-1 mb-4 w-max">البيانات الأساسية (للقراءة فقط)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                <div><label class="form-label">الاسم واللقب</label><input type="text" id="profName" class="readonly-badge" readonly></div>
+                <div><label class="form-label">الرقم الوظيفي</label><input type="text" id="profEmpId" class="readonly-badge" readonly></div>
+                <div><label class="form-label">رقم التعريف الوطني</label><input type="text" id="profNIN" class="readonly-badge" readonly></div>
+                <div><label class="form-label">تاريخ الميلاد</label><input type="text" id="profBirth" class="readonly-badge" readonly></div>
+                <div><label class="form-label">الرتبة المهنية</label><input type="text" id="profRank" class="readonly-badge" readonly></div>
+                <div><label class="form-label">مكان العمل</label><input type="text" id="profWorkplace" class="readonly-badge" readonly></div>
+                <div><label class="form-label">تاريخ التوظيف</label><input type="text" id="profEmpDate" class="readonly-badge" readonly></div>
+                <div><label class="form-label">الحساب البريدي (CCP)</label><input type="text" id="profCcp" class="readonly-badge" dir="ltr" readonly></div>
+                <div><label class="form-label">المفتاح</label><input type="text" id="profKey" class="readonly-badge" readonly></div>
+            </div>
+
+            <h3 class="text-xs font-black text-accent border-b border-accent/20 pb-1 mb-4 w-max">البيانات القابلة للتحديث</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                
+                
+
+                <div class="input-wrapper !mb-0">
+                    <label class="form-label">دائرة العمل</label>
+                    <div class="relative">
+                        <select id="profWorkDistrict" class="modern-input cursor-pointer appearance-none !pr-8" onchange="updateMunicipalities('profWorkDistrict', 'profWorkMunicipality')"></select>
+                        <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                    </div>
+                </div>
+                <div class="input-wrapper !mb-0">
+                    <label class="form-label">بلدية العمل</label>
+                    <div class="relative">
+                        <select id="profWorkMunicipality" class="modern-input cursor-pointer appearance-none !pr-8"></select>
+                        <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                    </div>
+                </div>
+
+                <div class="input-wrapper !mb-0">
+                    <label class="form-label">دائرة الإقامة</label>
+                    <div class="relative">
+                        <select id="profResDistrict" class="modern-input cursor-pointer appearance-none !pr-8" onchange="updateMunicipalities('profResDistrict', 'profResMunicipality')"></select>
+                        <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                    </div>
+                </div>
+                <div class="input-wrapper !mb-0">
+                    <label class="form-label">بلدية الإقامة</label>
+                    <div class="relative">
+                        <select id="profResMunicipality" class="modern-input cursor-pointer appearance-none !pr-8"></select>
+                        <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                    </div>
+                </div>
+
+                <div class="input-wrapper md:col-span-2 !mb-0 grid grid-cols-1 md:grid-cols-5 gap-x-6 gap-y-4">
+                    <div class="md:col-span-2">
+                        <label class="form-label">رقم الهاتف</label>
+                        <div class="relative">
+                            <div class="input-icon"><i class="fa-solid fa-phone"></i></div>
+                            <input type="tel" id="profPhone" class="modern-input" dir="ltr" maxlength="14" oninput="formatPhoneSimple(this)">
+                        </div>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="form-label">البريد الإلكتروني (@gmail.com)</label>
+                        <div class="relative">
+                            <div class="input-icon"><i class="fa-solid fa-envelope"></i></div>
+                            <input type="email" id="profEmail" class="modern-input" dir="ltr">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <div class="input-wrapper !mb-0">
+                        <label class="form-label">الحالة العائلية</label>
+                        <div class="relative">
+                            <select id="profFamilyStatus" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleFamilyStatusChange('prof')">
+                                <option value="أعزب(ة)">أعزب(ة)</option>
+                                <option value="متزوج(ة)">متزوج(ة)</option>
+                                <option value="مطلق(ة)">مطلق(ة)</option>
+                                <option value="أرمل(ة)">أرمل(ة)</option>
+                            </select>
+                            <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                        </div>
+                    </div>
+                    <div id="profChildrenCountContainer" class="input-wrapper !mb-0 hidden">
+                        <label class="form-label">عدد الأولاد</label>
+                        <input type="number" id="profChildrenCount" class="modern-input" min="0">
+                    </div>
+                </div>
+
+                <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <div class="input-wrapper !mb-0">
+                        <label class="form-label">هل تكفل أفراداً آخرين؟</label>
+                        <div class="relative">
+                            <select id="profSponsorship" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleSponsorshipChange('prof')">
+                                <option value="لا">لا</option>
+                                <option value="نعم">نعم</option>
+                            </select>
+                            <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                        </div>
+                    </div>
+                    <div id="profSponsorshipCountContainer" class="input-wrapper !mb-0 hidden">
+                        <label class="form-label">عدد الأفراد المكفولين</label>
+                        <input type="number" id="profSponsoredCount" class="modern-input" min="1">
+                    </div>
+                </div>
+
+                <!-- ثنائي القطاع -->
+                <div class="input-wrapper md:col-span-2 !mb-0 border-t border-slate-200 pt-4 mt-2">
+                    <label class="form-label text-sm text-primary">ثنائي القطاع (الزوج/ة بقطاع التربية؟)</label>
+                    <div class="relative">
+                        <select id="profDualSector" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleDualSectorChange('prof')">
+                            <option value="لا">لا</option>
+                            <option value="نعم">نعم</option>
+                        </select>
+                        <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                    </div>
+                </div>
+
+                <div id="profDualSectorContainer" class="hidden md:col-span-2 bg-blue-50/50 border border-blue-200 p-4 rounded-xl grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="form-label">بيانات الزوج(ة)</label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <div class="sm:w-1/3 relative">
+                                <select id="profSpouseStatus" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleSpouseStatusChange('prof')">
+                                    <option value="موظف(ة)">موظف(ة)</option>
+                                    <option value="متقاعد(ة)">متقاعد(ة)</option>
+                                </select>
+                                <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                            </div>
+                            
+                            <!-- إضافة دالة resetSpouseName عند الكتابة في هذه الحقول -->
+                            <div id="profSpouseEmpIdContainer" class="sm:w-2/3 flex gap-2">
+                                <input type="text" id="profSpouseEmpId" class="modern-input !mb-0 w-full" placeholder="الرقم الوظيفي" maxlength="16" oninput="this.value=this.value.replace(/[^0-9]/g,''); resetSpouseName('prof')">
+                                <button type="button" class="btn-primary !w-auto !py-2 !mt-0 !px-6" onclick="verifySpouse('employee', 'prof')">تحقق</button>
+                            </div>
+                            <div id="profSpouseCcpContainer" class="sm:w-2/3 flex gap-2 hidden">
+                                <input type="text" id="profSpouseCcp" class="modern-input !mb-0 w-full" placeholder="الحساب البريدي" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,''); resetSpouseName('prof')">
+                                <button type="button" class="btn-primary !w-auto !py-2 !mt-0 !px-6" onclick="verifySpouse('retiree', 'prof')">تحقق</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label">الاسم الكامل المطابق للزوج(ة)</label>
+                        <input type="text" id="profSpouseName" class="modern-input !bg-white/50 !border-slate-300 !text-slate-500 pointer-events-none" readonly>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+            <button onclick="closeProfileModal()" class="px-6 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 transition-colors">إلغاء</button>
+            <button onclick="saveMyProfile()" class="px-8 py-2.5 rounded-xl font-bold text-white bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/30 transition-colors flex items-center gap-2">
+                حفظ التعديلات <i class="fa-solid fa-floppy-disk"></i>
+            </button>
+        </div>
+
+    </div>
+  </div>
+
+  <script>
+    // =========================================
+    // إعدادات Firebase
+    // =========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
+      authDomain: "databaseemploye.firebaseapp.com",
+      projectId: "databaseemploye",
+      storageBucket: "databaseemploye.firebasestorage.app",
+      messagingSenderId: "408231477466",
+      appId: "1:408231477466:web:e3bf5bd3eaca7cdcd3a5e3"
+    };
+
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
+
+    const baladiyaMap = {
+      "توقرت": ["توقرت", "النزلة", "تبسبست", "الزاوية العابدية"],
+      "تماسين": ["تماسين", "بلدة عمر"],
+      "المقارين": ["المقارين", "سيدي سليمان"],
+      "الحجيرة": ["الحجيرة", "العالية"],
+      "الطيبات": ["الطيبات", "المنقر", "ابن ناصر"]
+    };
+
+    function initDistrictsForSelect(selectId) {
+        const select = document.getElementById(selectId);
+        if(!select) return;
+        select.innerHTML = '<option value="" disabled selected>اختر الدائرة</option>';
+        Object.keys(baladiyaMap).forEach(d => {
+            const option = document.createElement('option');
+            option.value = d;
+            option.textContent = d;
+            select.appendChild(option);
+        });
+    }
+
+    function updateMunicipalities(districtSelectId, municipalitySelectId, preselectedValue = '') {
+        const district = document.getElementById(districtSelectId).value;
+        const munSelect = document.getElementById(municipalitySelectId);
+        
+        munSelect.innerHTML = '<option value="" disabled selected>اختر البلدية</option>';
+        if(district && baladiyaMap[district]) {
+            baladiyaMap[district].forEach(m => {
+                const option = document.createElement('option');
+                option.value = m;
+                option.textContent = m;
+                if(m === preselectedValue) option.selected = true;
+                munSelect.appendChild(option);
+            });
+            munSelect.disabled = false;
+        } else {
+            munSelect.disabled = true;
+        }
+    }
+
+    const registrationStatus = { 'rahalate': false, 'omra': false, 'mokhayem': false, 'abnaa_rahalate': false, 'abnaa_quran': false, 'solef': false, 'lottery': false };
+
+    function listenToServiceConfig(docId, cardId) {
+        db.collection("config_cwoste").doc(docId).onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                const isOpen = data.registrationOpen !== false;
+                const isVisible = data.iconVisible !== false;
+                
+                registrationStatus[docId] = isOpen;
+                
+                const card = document.getElementById(cardId);
+                if(card) {
+                    card.style.display = !isVisible ? 'none' : 'flex';
+                    const existingBadge = card.querySelector('.new-badge');
+                    if (existingBadge) existingBadge.remove();
+                    if (isOpen && isVisible) {
+                        card.insertAdjacentHTML('beforeend', '<div class="new-badge">مفتوح</div>');
+                    }
+                }
+            }
+        });
+    }
+
+   // =========================================
+    // نظام الحماية وجلب البيانات
+    // =========================================
+    let currentUserData = null;
+    let currentUserDocId = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        // تشغيل مستمعي قاعدة البيانات للأيقونات
+        listenToServiceConfig('rahalate', 'tripsService');
+        listenToServiceConfig('omra', 'umrahService');
+        listenToServiceConfig('mokhayem', 'campsService');
+        listenToServiceConfig('abnaa_rahalate', 'sectorChildrenTripsService');
+        listenToServiceConfig('abnaa_quran', 'sectorChildrenQuranService');
+        listenToServiceConfig('solef', 'socialLoansService');
+        listenToServiceConfig('live_broadcast', 'btnLottery');
+
+        // 🔴 مراقب خاص بشاشة البث المباشر (لإضافة الشارة الحمراء مثل لوحة الإدارة) 🔴
+        db.collection("config_cwoste").doc("live_broadcast").onSnapshot((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                const isOpen = data.registrationOpen === true; // التحقق من صلاحية الدخول
+                const isVisible = data.iconVisible !== false; // التحقق من الإظهار/الإخفاء
+                
+                registrationStatus['lottery'] = isOpen;
+                
+                const card = document.getElementById('btnLottery');
+                if(card) {
+                    card.style.display = !isVisible ? 'none' : 'flex';
+                    
+                    // إزالة الشارة القديمة إن وجدت
+                    const existingBadge = card.querySelector('.new-badge');
+                    if (existingBadge) existingBadge.remove();
+                    
+                    // إضافة الشارة الحمراء فقط إذا كان البث مفتوحاً
+                    if (isOpen && isVisible) {
+                        card.insertAdjacentHTML('beforeend', '<div class="new-badge" style="background: #d32f2f; box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4); border-color: white;">🔴 مباشر</div>');
+                    }
+                }
+            }
+        });
+
+        // 1. التحقق من تسجيل الدخول (في الجلسة المؤقتة أو الدائمة)
+        const token = localStorage.getItem('cwoste_auth_token') || sessionStorage.getItem('cwoste_auth_token');
+        const role = localStorage.getItem('cwoste_auth_role') || sessionStorage.getItem('cwoste_auth_role');
+        
+        if (!token || role !== 'Employee') {
+            window.location.href = 'auth_system.html';
+            return;
+        }
+
+        try {
+            const querySnap = await db.collection('compte_cwoste').doc('employee_accounts').collection('users').where('ccp', '==', token).limit(1).get();
+            
+            if (querySnap.empty) {
+                localStorage.removeItem('cwoste_auth_token');
+                localStorage.removeItem('cwoste_auth_role');
+                sessionStorage.removeItem('cwoste_auth_token');
+                sessionStorage.removeItem('cwoste_auth_role');
+                window.location.href = 'auth_system.html';
+                return;
+            }
+
+            currentUserData = querySnap.docs[0].data();
+            currentUserDocId = querySnap.docs[0].id;
+
+            document.getElementById('employeeNameDisplay').textContent = currentUserData.name;
+            document.getElementById('employeeIdDisplay').textContent = currentUserData.empId;
+            
+            loadEmployeePhoto(currentUserData.empId);
+
+        } catch (error) {
+            console.error("Error fetching user:", error);
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل في جلب البيانات، يرجى تحديث الصفحة', confirmButtonText: 'تحديث' }).then(() => {
+                location.reload();
+            });
+        }
+    });
+
+    // =========================================
+    // تسجيل الخروج
+    // =========================================
+    function logout() {
+        Swal.fire({
+            title: 'هل تريد تسجيل الخروج؟',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، خروج',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#d32f2f',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // مسح جميع بيانات الجلسات المؤقتة والدائمة
+                localStorage.removeItem('cwoste_auth_token');
+                localStorage.removeItem('cwoste_auth_role');
+                sessionStorage.removeItem('cwoste_auth_token');
+                sessionStorage.removeItem('cwoste_auth_role');
+                
+                window.location.href = 'auth_system.html';
+            }
+        });
+    }    
+    
+
+   function openProfileModal() {
+        if(!currentUserData) return;
+        
+        // تعبئة الحقول الأساسية
+        document.getElementById('profName').value = currentUserData.name || '';
+        document.getElementById('profEmpId').value = currentUserData.empId || '';
+        document.getElementById('profNIN').value = currentUserData.nin || '';
+        document.getElementById('profBirth').value = currentUserData.birthDate || '';
+        document.getElementById('profRank').value = currentUserData.grade || '';
+        document.getElementById('profWorkplace').value = currentUserData.workplace || '';
+        document.getElementById('profEmpDate').value = currentUserData.employmentDate || '';
+        document.getElementById('profCcp').value = currentUserData.ccp || '';
+        document.getElementById('profKey').value = currentUserData.ccpKey || '';
+        
+        // تعبئة القوائم المنسدلة (تأكد من استدعاء الدوال هنا)
+        const workDistrictSelect = document.getElementById('profWorkDistrict');
+        const resDistrictSelect = document.getElementById('profResDistrict');
+        
+        // إعادة تهيئة القوائم لضمان ظهور الخيارات
+        initDistrictsForSelect('profWorkDistrict');
+        initDistrictsForSelect('profResDistrict');
+        
+        // تعيين القيم المسجلة في القاعدة
+        workDistrictSelect.value = currentUserData.workDistrict || '';
+        resDistrictSelect.value = currentUserData.residenceDistrict || '';
+        
+        // تحديث البلديات بناءً على الدوائر المختارة
+        updateMunicipalities('profWorkDistrict', 'profWorkMunicipality', currentUserData.workMunicipality);
+        updateMunicipalities('profResDistrict', 'profResMunicipality', currentUserData.residenceMunicipality);
+
+        // تعبئة باقي البيانات
+        const phoneInput = document.getElementById('profPhone');
+        phoneInput.value = currentUserData.phone || '';
+        formatPhoneSimple(phoneInput); 
+        document.getElementById('profEmail').value = currentUserData.email || '';
+
+        document.getElementById('profFamilyStatus').value = currentUserData.familyStatus || 'أعزب(ة)';
+        handleFamilyStatusChange('prof');
+        if(currentUserData.familyStatus !== 'أعزب(ة)') document.getElementById('profChildrenCount').value = currentUserData.childrenCount || 0;
+
+        document.getElementById('profSponsorship').value = currentUserData.sponsorship || 'لا';
+        handleSponsorshipChange('prof');
+        if(currentUserData.sponsorship === 'نعم') document.getElementById('profSponsoredCount').value = currentUserData.sponsoredCount || 1;
+
+        document.getElementById('profDualSector').value = currentUserData.dualSector || 'لا';
+        handleDualSectorChange('prof');
+        
+        // إظهار النافذة
+        document.getElementById('profileModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profileModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    function handleFamilyStatusChange(prefix) {
+        const val = document.getElementById(prefix + 'FamilyStatus').value;
+        const childContainer = document.getElementById(prefix + 'ChildrenCountContainer');
+        if(val && val !== 'أعزب(ة)') {
+            childContainer.classList.remove('hidden');
+        } else {
+            childContainer.classList.add('hidden');
+            document.getElementById(prefix + 'ChildrenCount').value = '';
+        }
+    }
+
+    function handleSponsorshipChange(prefix) {
+        const val = document.getElementById(prefix + 'Sponsorship').value;
+        const countContainer = document.getElementById(prefix + 'SponsorshipCountContainer');
+        if(val === 'نعم') { countContainer.classList.remove('hidden'); } 
+        else { countContainer.classList.add('hidden'); document.getElementById(prefix + 'SponsoredCount').value = ''; }
+    }
+
+    function handleDualSectorChange(prefix) {
+        const val = document.getElementById(prefix + 'DualSector').value;
+        const container = document.getElementById(prefix + 'DualSectorContainer');
+        if(val === 'نعم') {
+            container.classList.remove('hidden');
+        } else {
+            container.classList.add('hidden');
+            resetSpouseName(prefix);
+            document.getElementById(prefix + 'SpouseEmpId').value = '';
+            document.getElementById(prefix + 'SpouseCcp').value = '';
+        }
+    }
+
+    function handleSpouseStatusChange(prefix) {
+        const val = document.getElementById(prefix + 'SpouseStatus').value;
+        resetSpouseName(prefix);
+        
+        if(val === 'موظف(ة)') {
+            document.getElementById(prefix + 'SpouseEmpIdContainer').classList.remove('hidden');
+            document.getElementById(prefix + 'SpouseCcpContainer').classList.add('hidden');
+        } else {
+            document.getElementById(prefix + 'SpouseEmpIdContainer').classList.add('hidden');
+            document.getElementById(prefix + 'SpouseCcpContainer').classList.remove('hidden');
+        }
+    }
+
+    // إفراغ حقل اسم الزوج بمجرد التعديل في رقم التعريف/الحساب
+    function resetSpouseName(prefix) {
+        const nameField = document.getElementById(prefix + 'SpouseName');
+        if (nameField && nameField.value !== '') {
+            nameField.value = '';
+            nameField.classList.replace('!bg-green-100', '!bg-white/50');
+            nameField.classList.replace('!text-green-800', '!text-slate-500');
+        }
+    }
+
+    function cleanPhone(phoneStr) { return phoneStr.replace(/\s/g, ''); }
+    function formatPhoneSimple(input) {
+      let value = input.value.replace(/\D/g, '').slice(0, 10);
+      if (value.length > 0) {
+        const parts = [];
+        for (let i = 0; i < value.length; i += 2) { parts.push(value.slice(i, i + 2)); }
+        input.value = parts.join(' ');
+      } else { input.value = ''; }
+    }
+    function validateEmailPhone(email, rawPhone) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+      const cleanPhoneNumber = cleanPhone(rawPhone);
+      const phoneRegex = /^(05|06|07)[0-9]{8}$/;
+      if (!emailRegex.test(email)) return "يجب أن يكون البريد الإلكتروني من نطاق @gmail.com";
+      if (!phoneRegex.test(cleanPhoneNumber) || cleanPhoneNumber.length !== 10) return "رقم الهاتف غير صالح (10 أرقام ويبدأ بـ 05/06/07)";
+      return null;
+    }
+
+    async function checkDuplicateData(field, value, excludeDocId, labelAr) {
+        if (!value) return null;
+        
+        const empQuery = await db.collection('compte_cwoste').doc('employee_accounts').collection('users').where(field, '==', value).get();
+        for (let doc of empQuery.docs) {
+            if (doc.id !== excludeDocId) return `هذا الـ ${labelAr} مستخدم في حساب موظف آخر.`;
+        }
+        
+        const retQuery = await db.collection('compte_cwoste').doc('retiree_widow_accounts').collection('users').where(field, '==', value).get();
+        if (!retQuery.empty) return `هذا الـ ${labelAr} مستخدم في حساب متقاعد أو أرملة مسبقاً.`;
+
+        return null; 
+    }
+
+    async function verifySpouse(type, prefix) {
+        const nameField = document.getElementById(prefix + 'SpouseName');
+        let inputVal = '';
+        
+        if (type === 'employee') {
+            inputVal = document.getElementById(prefix + 'SpouseEmpId').value.trim();
+            if(!inputVal) return Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الرجاء إدخال الرقم الوظيفي للزوج(ة) أولاً.', confirmButtonText: 'موافق', target: document.getElementById('profileModal') });
+            if(inputVal.length !== 16) return Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الرقم الوظيفي يجب أن يتكون من 16 رقماً.', confirmButtonText: 'موافق', target: document.getElementById('profileModal') });
+            
+            if (currentUserData && inputVal === currentUserData.empId) {
+                return Swal.fire({ icon: 'error', title: 'خطأ', text: 'لا يمكنك إدخال رقمك الوظيفي الخاص كبيانات للزوج(ة)!', confirmButtonText: 'موافق', target: document.getElementById('profileModal') });
+            }
+
+        } else {
+            inputVal = document.getElementById(prefix + 'SpouseCcp').value.trim();
+            if(!inputVal) return Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الرجاء إدخال الحساب البريدي للزوج(ة) أولاً.', confirmButtonText: 'موافق', target: document.getElementById('profileModal') });
+            
+            if (currentUserData && inputVal === currentUserData.ccp) {
+                return Swal.fire({ icon: 'error', title: 'خطأ', text: 'لا يمكنك إدخال حسابك البريدي الخاص كبيانات للزوج(ة)!', confirmButtonText: 'موافق', target: document.getElementById('profileModal') });
+            }
+        }
+
+        Swal.fire({ title: 'جاري التحقق...', allowOutsideClick: false, target: document.getElementById('profileModal'), didOpen: () => Swal.showLoading() });
+        
+        try {
+            let spData = null;
+            if (type === 'employee') {
+                let spDoc = await db.collection("employeescomplus").doc(inputVal).get();
+                if(spDoc.exists) spData = spDoc.data();
+                else {
+                    let spQuery = await db.collection("employeescomplus").where("empId", "==", inputVal).limit(1).get();
+                    if(!spQuery.empty) spData = spQuery.docs[0].data();
+                }
+                if(!spData) throw new Error('الرقم الوظيفي للزوج(ة) غير موجود بالوزارة.');
+                nameField.value = spData.name;
+            } else if (type === 'retiree') {
+                let spDoc = await db.collection('compte_cwoste').doc('retiree_widow_accounts').collection('users').doc(inputVal).get();
+                if(!spDoc.exists) throw new Error('لم يتم العثور على حساب مسجل للمتقاعد(ة) بهذا الـ CCP.');
+                let data = spDoc.data();
+                nameField.value = (data.firstName + " " + data.lastName).trim();
+            }
+            
+            nameField.classList.replace('!bg-white/50', '!bg-green-100');
+            nameField.classList.replace('!text-slate-500', '!text-green-800');
+            Swal.fire({ icon: 'success', title: 'تم التحقق بنجاح', text: 'تم العثور على: ' + nameField.value, confirmButtonText: 'موافق', confirmButtonColor: '#10b981', target: document.getElementById('profileModal') });
+
+        } catch(e) {
+            resetSpouseName(prefix);
+            Swal.fire({ icon: 'error', title: 'فشل التحقق', text: e.message, confirmButtonText: 'موافق', target: document.getElementById('profileModal') });
+        }
+    }
+
+    async function saveMyProfile() {
+        const nin = document.getElementById('profNIN').value.trim();
+        const ccp = document.getElementById('profCcp').value.trim();
+        const key = document.getElementById('profKey').value.trim();
+        const workDist = document.getElementById('profWorkDistrict').value;
+        const workMun = document.getElementById('profWorkMunicipality').value;
+        const resDist = document.getElementById('profResDistrict').value;
+        const resMun = document.getElementById('profResMunicipality').value;
+        const rawPhone = document.getElementById('profPhone').value;
+        const phone = cleanPhone(rawPhone);
+        const email = document.getElementById('profEmail').value.trim();
+        const family = document.getElementById('profFamilyStatus').value;
+        const children = document.getElementById('profChildrenCount').value.trim();
+        const sponsorship = document.getElementById('profSponsorship').value;
+        const sponsored = document.getElementById('profSponsoredCount').value.trim();
+        const dualSector = document.getElementById('profDualSector').value;
+        const spouseStatus = document.getElementById('profSpouseStatus').value;
+        const spouseName = document.getElementById('profSpouseName').value.trim();
+        const spouseEmpId = document.getElementById('profSpouseEmpId').value.trim();
+        const spouseCcp = document.getElementById('profSpouseCcp').value.trim();
+
+        let isValid = true; let errorMsg = '';
+        if(!nin || nin.length !== 18) { isValid=false; errorMsg='رقم التعريف الوطني يجب أن يكون 18 رقماً.'; }
+        else if(!ccp || ccp.length !== 10 || !key) { isValid=false; errorMsg='الرجاء التأكد من الـ CCP (10 أرقام) والمفتاح.'; }
+        else if(!workDist || !workMun || !resDist || !resMun) { isValid=false; errorMsg='الرجاء اختيار الدوائر والبلديات بشكل صحيح.'; }
+        else if(!phone || phone.length !== 10) { isValid=false; errorMsg='رقم الهاتف غير صالح.'; }
+        else if(!email || validateEmailPhone(email, rawPhone)) { isValid=false; errorMsg=validateEmailPhone(email, rawPhone) || 'إيميل غير صالح.'; }
+        else if(!family) { isValid=false; errorMsg='الرجاء اختيار الحالة العائلية.'; }
+        else if(family !== 'أعزب(ة)' && children === '') { isValid=false; errorMsg='الرجاء إدخال عدد الأولاد.'; }
+        else if(sponsorship === 'نعم' && (!sponsored || parseInt(sponsored)<1)) { isValid=false; errorMsg='الرجاء إدخال عدد المكفولين.'; }
+        else if(dualSector === 'نعم') {
+            if(!spouseName) { isValid=false; errorMsg='الرجاء التحقق من بيانات الزوج(ة) بنجاح أولاً.'; }
+            if(spouseStatus === 'موظف(ة)' && spouseEmpId === currentUserData.empId) { isValid=false; errorMsg='لا يمكنك استخدام رقمك الوظيفي الخاص للزوج(ة).'; }
+            if(spouseStatus === 'متقاعد(ة)' && spouseCcp === currentUserData.ccp) { isValid=false; errorMsg='لا يمكنك استخدام حسابك البريدي الخاص للزوج(ة).'; }
+        }
+
+        if(!isValid) { return Swal.fire({ icon: 'warning', title: 'تنبيه', text: errorMsg, confirmButtonText: 'موافق', target: document.getElementById('profileModal') }); }
+
+        Swal.fire({ title: 'جاري التحقق والحفظ...', allowOutsideClick: false, target: document.getElementById('profileModal'), didOpen: () => Swal.showLoading() });
+
+        try {
+            if(nin !== currentUserData.nin) {
+                let dupNIN = await checkDuplicateData('nin', nin, currentUserDocId, 'رقم التعريف الوطني');
+                if(dupNIN) throw new Error(dupNIN);
+            }
+            if(ccp !== currentUserData.ccp) {
+                let dupCCP = await checkDuplicateData('ccp', ccp, currentUserDocId, 'الحساب البريدي (CCP)');
+                if(dupCCP) throw new Error(dupCCP);
+            }
+            if(email !== currentUserData.email) {
+                let dupEmail = await checkDuplicateData('email', email, currentUserDocId, 'البريد الإلكتروني');
+                if(dupEmail) throw new Error(dupEmail);
+            }
+            if(phone !== currentUserData.phone) {
+                let dupPhone = await checkDuplicateData('phone', phone, currentUserDocId, 'رقم الهاتف');
+                if(dupPhone) throw new Error(dupPhone);
+            }
+
+            const newData = {
+                nin: nin, ccp: ccp, ccpKey: key,
+                workDistrict: workDist, workMunicipality: workMun,
+                residenceDistrict: resDist, residenceMunicipality: resMun,
+                phone: phone, email: email,
+                familyStatus: family, childrenCount: family === 'أعزب(ة)' ? 0 : parseInt(children),
+                sponsorship: sponsorship, sponsoredCount: sponsorship === 'نعم' ? parseInt(sponsored) : 0,
+                dualSector: dualSector
+            };
+
+            if (dualSector === 'نعم') {
+                newData.spouseStatus = spouseStatus;
+                newData.spouseName = spouseName;
+                newData.spouseIdOrCcp = spouseStatus === 'موظف(ة)' ? spouseEmpId : spouseCcp;
+            } else {
+                newData.spouseStatus = firebase.firestore.FieldValue.delete();
+                newData.spouseName = firebase.firestore.FieldValue.delete();
+                newData.spouseIdOrCcp = firebase.firestore.FieldValue.delete();
+            }
+
+            await db.collection('compte_cwoste').doc('employee_accounts').collection('users').doc(currentUserDocId).update(newData);
+            
+            currentUserData = { ...currentUserData, ...newData };
+            if(dualSector === 'لا') {
+                delete currentUserData.spouseStatus; delete currentUserData.spouseName; delete currentUserData.spouseIdOrCcp;
+            }
+
+            Swal.fire({ icon: 'success', title: 'تم الحفظ', text: 'تم تحديث بياناتك بنجاح', confirmButtonText: 'موافق', target: document.getElementById('profileModal') }).then(() => {
+                closeProfileModal();
+            });
+
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'تنبيه الأمان', text: error.message, confirmButtonText: 'موافق', target: document.getElementById('profileModal') });
+        }
+    }
+
+   function navigateWithWarning(serviceName, url, serviceKey) {
+        // 1. حالة إذا كان النظام مغلقاً
+        if (serviceKey && registrationStatus[serviceKey] === false) {
+            let msgTitle = '⛔ التسجيل مغلق';
+            let msgText = `نتأسف، التسجيل في <span class="text-red-600 font-bold">${serviceName}</span> غير متاح حالياً.`;
+            
+            // تخصيص الرسالة إذا كانت الخدمة هي القرعة
+            if (serviceKey === 'lottery') {
+                msgTitle = '⛔ البث متوقف';
+                msgText = `شاشة <span class="text-red-600 font-bold">${serviceName}</span> مغلقة حالياً. يرجى الانتظار حتى يتم تفعيلها من قبل الإدارة.`;
+            }
+
+            Swal.fire({ icon: 'info', title: msgTitle, html: msgText, confirmButtonText: 'حسناً', confirmButtonColor: '#7b1fa2' });
+            return;
+        }
+
+        // 2. استثناء القرعة: الدخول المباشر للمشاهدة بدون استمارة شروط
+        if (serviceKey === 'lottery') {
+            window.location.href = url;
+            return;
+        }
+
+        // 3. حالة الخدمات الأخرى (إظهار شروط التسجيل)
+        Swal.fire({
+            icon: 'info', title: `تسجيل: ${serviceName}`,
+            html: `
+                <div class="text-right bg-blue-50 p-4 rounded-xl border border-blue-100 mt-2">
+                    <p class="font-bold text-sm text-slate-700 mb-2">يرجى العلم بما يلي قبل بدء التسجيل:</p>
+                    <ul class="text-xs space-y-2 text-slate-600 font-semibold list-disc list-inside px-2">
+                        <li>أي تصريح بمعلومات مغلوطة يعرضك للإقصاء الفوري.</li>
+                        <li>سيتم جلب بياناتك الأساسية تلقائياً في الاستمارة بناءً على ما سجلته في بياناتي.</li>
+                    </ul>
+                    <label class="flex items-center gap-2 mt-4 text-xs font-black text-primaryDark cursor-pointer">
+                        <input type="checkbox" id="ackCheckbox" class="w-4 h-4 rounded accent-primary">
+                        أقر باطلاعي على القوانين وأتحمل مسؤولية صحة معلوماتي.
+                    </label>
+                </div>
+            `,
+            showCancelButton: true, confirmButtonText: 'انتقال للاستمارة', cancelButtonText: 'تراجع', confirmButtonColor: '#1976d2',
+            didOpen: () => {
+                const cb = document.getElementById('ackCheckbox');
+                const btn = Swal.getConfirmButton();
+                btn.disabled = true; btn.style.opacity = '0.5';
+                cb.addEventListener('change', () => { btn.disabled = !cb.checked; btn.style.opacity = cb.checked ? '1' : '0.5'; });
+            }
+        }).then((result) => {
+            if (result.isConfirmed) window.location.href = url;
+        });
+    }
+    function openLoansModal() {
+        if (registrationStatus['solef'] === false) {
+            Swal.fire({ icon: 'info', title: '⛔ التسجيل مغلق', html: `التسجيل في <span class="text-red-600 font-bold">السلف الإجتماعية</span> غير متاح حالياً.`, confirmButtonText: 'حسناً', confirmButtonColor: '#7b1fa2' });
+            return;
+        }
+        Swal.fire({
+            title: 'اختر نوع السلفة الاجتماعية',
+            html: `
+                <div class="flex flex-col gap-3 mt-4">
+                    <button onclick="navigateWithWarning('سلفة السكن', 'credit_logement.html')" class="w-full bg-blue-50 hover:bg-primary hover:text-white border border-blue-200 text-primaryDark font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-sm">
+                        <i class="fa-solid fa-house text-2xl"></i><span>سلفة السكن</span>
+                    </button>
+                    <button onclick="navigateWithWarning('السلفة الاستثنائية', 'credit_exceptionel.html')" class="w-full bg-orange-50 hover:bg-accent hover:text-white border border-orange-200 text-amber-800 font-black py-4 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-sm">
+                        <i class="fa-solid fa-money-bills text-2xl"></i><span>السلفة الاستثنائية</span>
+                    </button>
+                </div>
+            `,
+            showConfirmButton: false, showCancelButton: true, cancelButtonText: 'إغلاق',
+        });
+    }
+
+// رابط سكربت الصور (نفس الرابط المستخدم في صفحة الإدارة)
+    const PHOTO_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzSe-P_rRLZ0iiQtC1oB9mAkaNJ3b1r0pUsWpQgPznW4k5mItoMxlPjROd9wpev6rUjBw/exec"; 
+
+    // دالة "استخراج الجوهر" للمطابقة (ضرورية لضمان تطابق الأرقام)
+    function extractCoreId(val) {
+        if (!val) return "";
+        let str = String(val).trim().toUpperCase();
+        if (str.includes('E')) {
+            try { str = BigInt(Number(str)).toString(); } catch(e) { str = Number(str).toLocaleString('fullwide', { useGrouping: false }); }
+        }
+        let digitsOnly = str.replace(/\D/g, "");
+        let core = digitsOnly.replace(/^0+/, "");
+        return core === "" ? digitsOnly : core;
+    }
+
+    // دالة جلب الصورة وعرضها
+    async function loadEmployeePhoto(empId) {
+        try {
+            const response = await fetch(`${PHOTO_SCRIPT_URL}?type=employees`);
+            const photoData = await response.json();
+            
+            const coreId = extractCoreId(empId);
+            const employee = photoData.find(item => extractCoreId(item.jobId) === coreId);
+            
+            if (employee && employee.photoUrl) {
+                const imgElement = document.getElementById('empProfileImg');
+                let directUrl = employee.photoUrl;
+                const match = directUrl.match(/id=([a-zA-Z0-9_-]+)/) || directUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                if (match) directUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w300`;
+                
+                imgElement.src = directUrl;
+            }
+        } catch (e) {
+            console.error("تعذر جلب الصورة:", e);
+        }
+    }
+
+
+  </script>
+
+</body>
+</html>

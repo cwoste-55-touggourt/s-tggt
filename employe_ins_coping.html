@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل المخيمات الصيفية - الموظفين</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+      tailwind.config = {
+          theme: {
+              extend: {
+                  fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                  colors: {
+                      primary: '#1976d2',
+                      primaryDark: '#0d47a1',
+                      accent: '#fb8c00'
+                  }
+              }
+          }
+      }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .glass-card {
+        @apply bg-white/90 backdrop-blur-xl border border-white/60 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-6 sm:p-8 w-full max-w-[900px] mx-auto relative;
+      }
+      .input-wrapper { @apply relative mb-3; }
+      .modern-input {
+        @apply w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all font-bold text-slate-800 text-sm shadow-sm;
+      }
+      .readonly-input {
+        @apply bg-slate-100 border-slate-200 text-slate-600 cursor-not-allowed select-none;
+      }
+      .form-label {
+        @apply text-[11px] font-black text-primaryDark mb-1.5 block drop-shadow-sm;
+      }
+      .btn-primary {
+        @apply w-full bg-gradient-to-l from-primaryDark to-primary text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 text-base flex items-center justify-center gap-2;
+      }
+      .btn-success {
+        @apply w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:shadow-green-500/40 hover:-translate-y-0.5 transition-all duration-300 text-base flex items-center justify-center gap-2;
+      }
+    }
+    body { background-color: #f8fafc; }
+  </style>
+</head>
+<body class="font-cairo text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white relative">
+
+  <!-- الخلفية الموحدة -->
+  <div class="fixed inset-0 z-[-2] bg-slate-900">
+    <img src="https://lh3.googleusercontent.com/d/1i6isLnMztMiw2j7bgPNC4Phg9kWg7E3Q" alt="خلفية" class="w-full h-full object-cover opacity-90">
+    <div class="absolute inset-0 bg-slate-900/10"></div>
+  </div>
+
+  <nav class="absolute w-full top-0 z-40 py-4 px-6 flex justify-between items-center">
+    <div class="flex items-center gap-2"></div>
+    <a href="employee_dashboard.html" class="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1.5 rounded-full font-bold shadow-sm hover:bg-white hover:text-primaryDark transition-all text-xs flex items-center gap-2">
+      عودة للوحة التحكم <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </nav>
+
+  <!-- حاوية الاستمارة -->
+  <main id="formContainer" class="w-full hidden z-10 mt-12">
+    <div class="glass-card">
+      <div class="text-center mb-6 border-b border-slate-200 pb-4">
+        <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="الشعار" class="w-20 h-20 mx-auto mb-3 drop-shadow-md">
+        <h1 id="formTitle" class="text-xl sm:text-2xl font-black text-primaryDark">استمارة تسجيل الموظفين في المخيمات الصيفية</h1>
+      </div>
+
+      <!-- البيانات المجمدة المسحوبة من الحساب -->
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6">
+          <h3 class="text-xs font-black text-primary mb-3"><i class="fa-solid fa-id-card"></i> البيانات الشخصية والمهنية (للقراءة فقط)</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="input-wrapper"><label class="form-label">رقم التعريف</label><input type="text" id="regEmpId" class="modern-input readonly-input" readonly></div>
+              <div class="input-wrapper md:col-span-2"><label class="form-label">الاسم واللقب</label><input type="text" id="regName" class="modern-input readonly-input" readonly></div>
+              <div class="input-wrapper"><label class="form-label">تاريخ الميلاد</label><input type="text" id="regBirth" class="modern-input readonly-input" dir="ltr" readonly></div>
+              <div class="input-wrapper"><label class="form-label">الرتبة المهنية</label><input type="text" id="regGrade" class="modern-input readonly-input" readonly></div>
+              <div class="input-wrapper md:col-span-2"><label class="form-label">مكان العمل</label><input type="text" id="regPlace" class="modern-input readonly-input" readonly></div>
+              <div class="input-wrapper"><label class="form-label">رقم الهاتف</label><input type="text" id="regPhone" class="modern-input readonly-input" dir="ltr" readonly></div>
+              <div class="input-wrapper"><label class="form-label">الدائرة / البلدية</label><input type="text" id="regDistrictMun" class="modern-input readonly-input" readonly></div>
+              
+              <!-- البيانات العائلية -->
+              <div class="input-wrapper"><label class="form-label">الحالة العائلية</label><input type="text" id="regFamily" class="modern-input readonly-input" readonly></div>
+              <div class="input-wrapper" id="childrenWrap"><label class="form-label">عدد الأولاد</label><input type="text" id="regChildren" class="modern-input readonly-input" readonly></div>
+              <div class="input-wrapper" id="guaranteeWrap"><label class="form-label">الكفالة (العدد)</label><input type="text" id="regGuarantee" class="modern-input readonly-input" readonly></div>
+              
+              <!-- بيانات الزوج -->
+              <div class="input-wrapper md:col-span-4 hidden" id="spouseWrap">
+                  <label class="form-label">بيانات ثنائي القطاع (الزوج/ة)</label>
+                  <input type="text" id="regSpouse" class="modern-input readonly-input !text-green-800 !bg-green-50" readonly>
+              </div>
+          </div>
+      </div>
+
+      <!-- حقول الاختيار (الوجهة والفوج) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
+          <div class="input-wrapper !mb-0">
+              <label class="form-label !text-sm text-primary">الوجهة <span class="text-red-500">*</span></label>
+              <select id="regDestination" class="modern-input !bg-white cursor-pointer border-blue-200" onchange="updateCohorts()">
+                  <option value="" disabled selected>يرجى تحديد الوجهة...</option>
+              </select>
+          </div>
+          <div class="input-wrapper !mb-0">
+              <label class="form-label !text-sm text-primary">الفوج <span class="text-red-500">*</span></label>
+              <select id="regCohort" class="modern-input !bg-white cursor-pointer border-blue-200" disabled>
+                  <option value="" disabled selected>يرجى تحديد الفوج...</option>
+              </select>
+          </div>
+      </div>
+
+      <div class="mt-8 max-w-md mx-auto">
+        <button id="submitBtn" class="btn-primary" onclick="submitForm()">تأكيد وتسجيل <i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // =========================================
+    // إعدادات Firebase و Google Apps Script
+    // =========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
+      authDomain: "databaseemploye.firebaseapp.com",
+      projectId: "databaseemploye",
+      storageBucket: "databaseemploye.firebasestorage.app",
+      messagingSenderId: "408231477466",
+      appId: "1:408231477466:web:e3bf5bd3eaca7cdcd3a5e3"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyBTBgCHqkdLSGAIHWccTKRVdoye50_RSR_b5zF52Knlnq2MIHBbeKqfGLto5GyUNI8Hg/exec";
+
+    let isEditMode = false;
+    let employeeData = null;
+    let systemDestinations = {};
+
+    // =========================================
+    // نظام الوصل (بالتصميم القديم تماماً)
+    // =========================================
+    const receiptBranding = {
+      logoUrl: "https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15",
+      govTitle: "الجمهورية الجزائرية الديمقراطية الشعبية",
+      ministry: "وزارة التربية الوطنية",
+      directorate: "مديرية التربية لولاية توقرت",
+      committee: "اللجنة الوطنية للخدمات الاجتماعية لعمال التربية",
+      service: "اللجنة الولائية للخدمات الإجتماعية لعمال التربية لولاية توقرت",
+      addressLine: "المقر: حي خميستي، توقرت",
+      contactLine: "الهاتف: 91 39 98 030       - البريد: cwostetggt55@gmail.com"
+    };
+
+    function escapeHtml(str){ return String(str || '').replace(/[&<>"'`=\/]/g, function(s){ return '&#' + s.charCodeAt(0) + ';'; }); }
+
+    function formatCleanDateTime(dateStr) {
+        if (!dateStr) return 'غير متوفر';
+        try {
+            if (typeof dateStr === 'string' && dateStr.includes('ll')) {
+                const parts = dateStr.split('ll');
+                return `${parts[1].trim()} على الساعة ${parts[0].trim()}`;
+            }
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} على الساعة ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+            }
+        } catch(e) {}
+        return dateStr;
+    }
+
+    function prepareReceiptData(raw = {}, options = {}) {
+      const normalize = (val) => (val === undefined || val === null) ? "" : String(val).trim();
+      const data = {
+        empId: normalize(raw.empId),
+        name: normalize(raw.name),
+        birthDate: normalize(raw.birthDate),
+        grade: normalize(raw.grade),
+        place: normalize(raw.place),
+        daira: normalize(raw.daira),
+        baladiya: normalize(raw.baladiya),
+        personalPhone: normalize(raw.personalPhone),
+        maritalStatus: normalize(raw.maritalStatus),
+        childrenCount: normalize(raw.childrenCount),
+        dualSector: normalize(raw.dualSector),
+        spouseStatus: normalize(raw.spouseStatus),
+        spouseEmpId: normalize(raw.spouseEmpId),
+        spouseName: normalize(raw.spouseName),
+        guarantee: normalize(raw.guarantee),
+        guaranteedCount: normalize(raw.guaranteedCount),
+        destination: normalize(raw.destination),
+        cohort: normalize(raw.cohort)
+      };
+
+      if (data.personalPhone && data.personalPhone.length === 10 && !data.personalPhone.includes(' ')) {
+        let p = data.personalPhone;
+        data.personalPhone = p.slice(0, 2) + ' ' + p.slice(2, 4) + ' ' + p.slice(4, 6) + ' ' + p.slice(6, 8) + ' ' + p.slice(8, 10);
+      }
+
+      data.registrationDate = options.registrationDate || raw.createdAt || raw.date || new Date().toISOString();
+      data.modificationDate = options.modificationDate || raw.updatedAt || raw.modificationDate || "";
+      return data;
+    }
+
+    function renderReceiptTemplate(data = {}) {
+      const safe = (value) => escapeHtml(value || "-");
+      const registrationMoment = formatCleanDateTime(data.registrationDate);
+      const modificationMoment = data.modificationDate ? formatCleanDateTime(data.modificationDate) : "";
+
+      const modificationLine = modificationMoment ? `<div class="meta-item">آخر تعديل: ${safe(modificationMoment)}</div>` : "";
+      
+      const isFamilyStatusRequiringChildren = ["متزوج(ة)", "مطلق(ة)", "أرمل(ة)"].includes(data.maritalStatus);
+      const childrenValue = data.childrenCount !== "" ? data.childrenCount : (isFamilyStatusRequiringChildren ? "0" : "-");
+      const childrenRow = isFamilyStatusRequiringChildren ? `<tr><td class="label">عدد الأولاد</td><td>${safe(childrenValue)}</td></tr>` : "";
+      const dualSectorRow = isFamilyStatusRequiringChildren ? `<tr><td class="label">ثنائي القطاع</td><td>${safe(data.dualSector || "لا")}</td></tr>` : "";
+      const spouseStatusRow = isFamilyStatusRequiringChildren && data.spouseStatus ? `<tr><td class="label">صفة الزوج(ة)</td><td>${safe(data.spouseStatus)}</td></tr>` : "";
+
+      let spouseRows = "";
+      if (data.dualSector === "نعم") {
+        if (data.spouseStatus === "موظف(ة)" && data.spouseEmpId) {
+          spouseRows += `<tr><td class="label">رقم تعريف الزوج(ة)</td><td>${safe(data.spouseEmpId)}</td></tr>`;
+        }
+        if (data.spouseName) {
+          spouseRows += `<tr><td class="label">الاسم الكامل للزوج(ة)</td><td>${safe(data.spouseName)}</td></tr>`;
+        }
+      }
+
+      const guaranteeRow = data.guarantee ? `<tr><td class="label">الكفالة</td><td>${safe(data.guarantee)}</td></tr>${data.guarantee === "نعم" && data.guaranteedCount ? `<tr><td class="label">عدد الأفراد المكفولين</td><td>${safe(data.guaranteedCount)}</td></tr>` : ""}` : "";
+      const destinationRow = data.destination ? `<tr><td class="label">الوجهة</td><td>${safe(data.destination)}</td></tr>` : "";
+      const cohortRow = data.cohort ? `<tr><td class="label">الفوج</td><td>${safe(data.cohort)}</td></tr>` : "";
+
+      return `
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>وصل التسجيل - ${receiptBranding.service}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
+        body { margin: 0; padding: 25px; background: #f2f5fb; font-family: 'Cairo', sans-serif; color: #1d2752; }
+        .receipt-card { max-width: 820px; margin: 0 auto; background: #fff; border-radius: 18px; padding: 32px 36px; box-shadow: 0 20px 45px rgba(13, 55, 133, 0.15); border: 1px solid #e6ecff; }
+        .receipt-header { display: flex; gap: 22px; align-items: center; border-bottom: 2px solid #eef1ff; padding-bottom: 18px; margin-bottom: 20px; }
+        .receipt-logo { width: 110px; height: 110px; object-fit: contain; }
+        .receipt-title h1 { font-size: 20px; margin: 6px 0 2px; color: #172042; }
+        .receipt-title h2 { font-size: 18px; margin: 0; color: #4357c8; }
+        .receipt-title p { margin: 2px 0; font-size: 14px; color: #4d5c84; }
+        .receipt-subtitle { text-align: center; font-size: 22px; margin-bottom: 15px; color: #23326b; }
+        .meta { display: flex; flex-wrap: wrap; gap: 12px; background: #f5f7ff; border: 1px solid #dfe6ff; border-radius: 12px; padding: 14px; margin-bottom: 18px; }
+        .meta-item { flex: 1; min-width: 180px; font-size: 14px; font-weight: 600; color: #1e2d58; }
+        table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+        table td { padding: 10px 0; border-bottom: 1px dashed #d9def0; font-size: 15px; }
+        table td.label { color: #5b6592; width: 38%; font-weight: 600; }
+        table tr:last-child td { border-bottom: none; }
+        .print-hint { text-align: center; margin-top: 25px; font-size: 14px; color: #4c5a88; }
+        .print-btn { margin-top: 12px; background: linear-gradient(45deg, #6a11cb, #2575fc); border: none; padding: 12px 24px; border-radius: 10px; color: #fff; font-size: 15px; cursor: pointer; font-family: 'Cairo', sans-serif; }
+        @media print {
+          body { margin: 0; padding: 10px; background: #fff; }
+          .receipt-card { max-width: 100%; margin: 0; padding: 15px 20px; box-shadow: none; border: none; page-break-inside: avoid; }
+          .receipt-header { gap: 15px; padding-bottom: 12px; margin-bottom: 12px; }
+          .receipt-logo { width: 80px; height: 80px; }
+          .receipt-title h1 { font-size: 16px; margin: 4px 0 1px; }
+          .receipt-title h2 { font-size: 14px; }
+          .receipt-title p { margin: 1px 0; font-size: 11px; }
+          .receipt-subtitle { font-size: 18px; margin-bottom: 10px; }
+          .meta { gap: 8px; padding: 10px; margin-bottom: 12px; }
+          .meta-item { font-size: 12px; min-width: 150px; }
+          table { page-break-inside: avoid; }
+          table tr { page-break-inside: avoid; page-break-after: auto; }
+          table td { padding: 6px 0; font-size: 13px; }
+          table td.label { width: 35%; }
+          .print-hint { display: none; }
+          .print-btn { display: none; }
+          @page { size: A4; margin: 0.5cm; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-card">
+        <div class="receipt-header">
+          <img src="${receiptBranding.logoUrl}" alt="شعار اللجنة" class="receipt-logo">
+          <div class="receipt-title">
+            <p>${receiptBranding.govTitle}</p>
+            <p>${receiptBranding.ministry}</p>
+            <p>${receiptBranding.directorate}</p>
+            <h1>${receiptBranding.committee}</h1>
+            <h2>${receiptBranding.service}</h2>
+            <p>${receiptBranding.addressLine}</p>
+            <p>${receiptBranding.contactLine}</p>
+          </div>
+        </div>
+        <h3 class="receipt-subtitle">وصل تسجيل الموظفين في المخيمات</h3>
+        <div class="meta">
+          <div class="meta-item">تاريخ التسجيل: ${safe(registrationMoment)}</div>
+          ${modificationLine}
+        </div>
+        <table>
+          <tbody>
+            <tr><td class="label">رقم التعريف</td><td>${safe(data.empId)}</td></tr>
+            <tr><td class="label">الاسم واللقب</td><td>${safe(data.name)}</td></tr>
+            <tr><td class="label">تاريخ الميلاد</td><td>${safe(data.birthDate)}</td></tr>
+            <tr><td class="label">الرتبة</td><td>${safe(data.grade)}</td></tr>
+            <tr><td class="label">مكان العمل</td><td>${safe(data.place)}</td></tr>
+            <tr><td class="label">الدائرة / البلدية</td><td>${safe(data.daira)} / ${safe(data.baladiya)}</td></tr>
+            <tr><td class="label">رقم الهاتف</td><td style="direction:ltr;unicode-bidi:bidi-override;text-align:right;">${safe(data.personalPhone)}</td></tr>
+            <tr><td class="label">الحالة العائلية</td><td>${safe(data.maritalStatus || "-")}</td></tr>
+            ${childrenRow}
+            ${dualSectorRow}
+            ${spouseStatusRow}
+            ${spouseRows}
+            ${guaranteeRow}
+            ${destinationRow}
+            ${cohortRow}
+          </tbody>
+        </table>
+        <div class="print-hint">
+          يمكن طباعة الوصل أو حفظه بصيغة PDF عبر زر الطباعة في الأسفل.
+          <br>
+          <button class="print-btn" onclick="window.print()">طباعة الوصل</button>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
+    }
+
+    function openReceiptPreview(rawData, options) {
+      const normalizedData = prepareReceiptData(rawData, options);
+      const receiptWindow = window.open("", "_blank");
+      if (!receiptWindow) {
+        Swal.fire("تنبيه", "يرجى السماح بفتح النوافذ المنبثقة لتحميل الوصل", "warning");
+        return;
+      }
+      receiptWindow.document.open();
+      receiptWindow.document.write(renderReceiptTemplate(normalizedData));
+      receiptWindow.document.close();
+      receiptWindow.focus();
+    }
+
+
+    // =========================================
+    // دورة حياة التطبيق (التحقق والفتح)
+    // =========================================
+    document.addEventListener("DOMContentLoaded", () => {
+        checkRegistrationStatus();
+    });
+
+    function checkRegistrationStatus() {
+        Swal.fire({ title: 'جاري التحقق من النظام...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        db.collection("config_cwoste").doc("mokhayem").get().then((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.registrationOpen === false) {
+                    Swal.fire({ icon: 'warning', title: 'التسجيل مغلق', text: 'عذراً، فترة التسجيل في المخيمات مغلقة حالياً.', confirmButtonText: 'عودة', allowOutsideClick: false }).then(() => { window.location.href = 'employee_dashboard.html'; });
+                    return;
+                }
+                systemDestinations = data.destinations || {};
+                authenticateUser();
+            } else {
+                authenticateUser();
+            }
+        }).catch(err => {
+            Swal.fire('خطأ', 'تعذر الاتصال بالنظام.', 'error').then(() => window.location.href = 'employee_dashboard.html');
+        });
+    }
+
+    async function authenticateUser() {
+        const token = localStorage.getItem('cwoste_auth_token') || sessionStorage.getItem('cwoste_auth_token');
+        const role = localStorage.getItem('cwoste_auth_role') || sessionStorage.getItem('cwoste_auth_role');
+
+        if (!token || role !== 'Employee') {
+            window.location.href = 'auth_system.html';
+            return;
+        }
+
+        try {
+            const querySnap = await db.collection('compte_cwoste').doc('employee_accounts').collection('users').where('ccp', '==', token).limit(1).get();
+            if (querySnap.empty) {
+                window.location.href = 'auth_system.html';
+                return;
+            }
+            employeeData = querySnap.docs[0].data();
+            checkPreviousRegistration(employeeData.empId);
+
+        } catch (error) {
+            Swal.fire('خطأ', 'فشل تحميل بيانات الحساب.', 'error').then(() => window.location.href = 'employee_dashboard.html');
+        }
+    }
+
+    async function checkPreviousRegistration(empId) {
+        Swal.fire({ title: 'جاري التحقق من سجلاتك...', text: 'لحظات من فضلك', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+            const benParams = new URLSearchParams();
+            benParams.append("action", "check_previous_beneficiary");
+            benParams.append("empId", empId);
+            benParams.append("loanType", "exceptional"); // المستخدمة في الكود القديم للمخيمات
+
+            const benRes = await fetch(scriptURL, { method: "POST", body: benParams });
+            const benData = await benRes.json();
+
+            if (benData.result === "previous_beneficiary") {
+                Swal.fire({
+                    icon: "error", title: "لا يمكنك التسجيل",
+                    html: `<p class="font-bold text-red-600 mb-2">${benData.message || 'أنت مستفيد(ة) من المخيمات السابقة'}</p><p class="text-sm">لا يحقّ للموظف الذي استفاد مسبقاً الإعادة.</p>`,
+                    confirmButtonText: "عودة للوحة التحكم", confirmButtonColor: "#d32f2f", allowOutsideClick: false
+                }).then(() => window.location.href = 'employee_dashboard.html');
+                return;
+            }
+
+            const existParams = new URLSearchParams();
+            existParams.append("action", "check_existing");
+            existParams.append("empId", empId);
+            existParams.append("loanType", "exceptional");
+
+            const existRes = await fetch(scriptURL, { method: "POST", body: existParams });
+            const existData = await existRes.json();
+
+            if (existData.result === "exists") {
+                Swal.close();
+                isEditMode = true;
+                const rec = existData.data;
+                const formattedDate = formatCleanDateTime(rec.createdAt || rec.date);
+
+                Swal.fire({
+                    icon: "info", title: "لديك تسجيل حالي",
+                    html: `
+                        <div class="text-right text-sm bg-slate-50 p-4 rounded-xl border border-slate-200 mt-2 leading-relaxed">
+                            <b>الوجهة:</b> <span class="text-primary">${rec.destination}</span><br>
+                            <b>الفوج:</b> <span class="text-primary">${rec.cohort}</span><br>
+                            <b>تاريخ التسجيل:</b> <span dir="ltr" class="font-bold">${formattedDate}</span>
+                        </div>
+                        <button type="button" id="existingReceiptBtn" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+                            تحميل وصل التسجيل <i class="fa-solid fa-print"></i>
+                        </button>
+                    `,
+                    showCancelButton: true, showDenyButton: true,
+                    confirmButtonText: "تعديل التسجيل", denyButtonText: "إلغاء تسجيلي", cancelButtonText: "عودة",
+                    confirmButtonColor: "#fb8c00", denyButtonColor: "#d32f2f", cancelButtonColor: "#64748b",
+                    didOpen: () => {
+                        document.getElementById('existingReceiptBtn').addEventListener('click', () => {
+                            openReceiptPreview(rec, { actionSource: "عرض التسجيل", registrationDate: rec.createdAt || rec.date, modificationDate: rec.modificationDate || rec.updatedAt });
+                        });
+                    }
+                }).then((resAction) => {
+                    if (resAction.isConfirmed) {
+                        openForm(rec.destination, rec.cohort);
+                    } else if (resAction.isDenied) {
+                        deleteRegistration(empId);
+                    } else if (resAction.isDismissed) {
+                        window.location.href = 'employee_dashboard.html';
+                    }
+                });
+                return;
+            }
+
+            Swal.close();
+            openForm();
+
+        } catch (error) {
+            Swal.fire('خطأ بالخادم', 'تعذر التحقق من سجلاتك. حاول لاحقاً.', 'error').then(() => window.location.href = 'employee_dashboard.html');
+        }
+    }
+
+    function populateDestinationsDropdown(selectedDest = "") {
+        const destField = document.getElementById("regDestination");
+        let html = '<option value="" disabled selected>يرجى تحديد الوجهة...</option>';
+        Object.keys(systemDestinations).forEach(dest => { html += `<option value="${dest}">${dest}</option>`; });
+        destField.innerHTML = html;
+        if(selectedDest) {
+            destField.value = selectedDest;
+            updateCohorts(selectedDest);
+        }
+    }
+
+    window.updateCohorts = function(selectedCohort = "") {
+        const dest = document.getElementById("regDestination").value;
+        const cohortField = document.getElementById("regCohort");
+        cohortField.innerHTML = '<option value="" disabled selected>يرجى تحديد الفوج...</option>';
+        
+        if(dest && systemDestinations[dest]) {
+            systemDestinations[dest].forEach(c => { cohortField.innerHTML += `<option value="${c}">${c}</option>`; });
+            cohortField.disabled = false;
+            if(selectedCohort) cohortField.value = selectedCohort;
+        } else {
+            cohortField.disabled = true;
+        }
+    }
+
+    function openForm(existingDest = "", existingCohort = "") {
+        document.getElementById('formContainer').classList.remove('hidden');
+        document.getElementById('formTitle').textContent = isEditMode ? 'تعديل تسجيل المخيم' : 'استمارة تسجيل الموظفين في المخيمات';
+        
+        const btn = document.getElementById('submitBtn');
+        if(isEditMode) {
+            btn.innerHTML = 'حفظ التعديلات <i class="fa-solid fa-floppy-disk"></i>';
+            btn.classList.replace('btn-primary', 'btn-success');
+        }
+
+        // تعبئة البيانات المجمدة
+        document.getElementById('regEmpId').value = employeeData.empId || '';
+        document.getElementById('regName').value = employeeData.name || '';
+        document.getElementById('regBirth').value = employeeData.birthDate || '';
+        document.getElementById('regGrade').value = employeeData.grade || '';
+        document.getElementById('regPlace').value = employeeData.workplace || '';
+        document.getElementById('regDistrictMun').value = `${employeeData.workDistrict || ''} / ${employeeData.workMunicipality || ''}`;
+        
+        let p = String(employeeData.phone || '');
+        if (p.length === 10 && !p.includes(' ')) p = p.slice(0, 2) + ' ' + p.slice(2, 4) + ' ' + p.slice(4, 6) + ' ' + p.slice(6, 8) + ' ' + p.slice(8, 10);
+        document.getElementById('regPhone').value = p;
+
+        document.getElementById('regFamily').value = employeeData.familyStatus || 'أعزب(ة)';
+        if(employeeData.familyStatus !== 'أعزب(ة)') {
+            document.getElementById('regChildren').value = employeeData.childrenCount || '0';
+        } else {
+            document.getElementById('childrenWrap').classList.add('hidden');
+        }
+
+        document.getElementById('regGuarantee').value = employeeData.sponsorship === 'نعم' ? `${employeeData.sponsorship} (${employeeData.sponsoredCount || 0})` : 'لا';
+
+        if(employeeData.dualSector === 'نعم') {
+            document.getElementById('spouseWrap').classList.remove('hidden');
+            let spouseInfo = `${employeeData.spouseStatus} | `;
+            if(employeeData.spouseStatus === 'موظف(ة)') spouseInfo += `الرقم: ${employeeData.spouseIdOrCcp} | `;
+            spouseInfo += `الاسم: ${employeeData.spouseName}`;
+            document.getElementById('regSpouse').value = spouseInfo;
+        }
+
+        populateDestinationsDropdown(existingDest);
+        if(existingCohort) updateCohorts(existingCohort);
+    }
+
+    async function submitForm() {
+        const dest = document.getElementById('regDestination').value;
+        const cohort = document.getElementById('regCohort').value;
+        
+        if (!dest || !cohort) {
+            return Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الرجاء اختيار الوجهة والفوج.' });
+        }
+
+        const btn = document.getElementById('submitBtn');
+        const orgText = btn.innerHTML;
+        btn.innerHTML = 'جاري الإرسال... <i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        const submitData = {
+            empId: employeeData.empId,
+            name: employeeData.name,
+            birthDate: employeeData.birthDate,
+            grade: employeeData.grade,
+            place: employeeData.workplace,
+            daira: employeeData.workDistrict,
+            baladiya: employeeData.workMunicipality,
+            personalPhone: employeeData.phone,
+            maritalStatus: employeeData.familyStatus,
+            childrenCount: employeeData.childrenCount,
+            dualSector: employeeData.dualSector,
+            spouseStatus: employeeData.spouseStatus || "",
+            spouseEmpId: employeeData.spouseStatus === 'موظف(ة)' ? employeeData.spouseIdOrCcp : "",
+            spouseName: employeeData.spouseName || "",
+            guarantee: employeeData.sponsorship,
+            guaranteedCount: employeeData.sponsoredCount,
+            destination: dest,
+            cohort: cohort
+        };
+
+        const params = new URLSearchParams();
+        params.append("action", isEditMode ? "update" : "register");
+        params.append("loanType", "exceptional");
+        for (const key in submitData) { params.append(key, submitData[key]); }
+
+        if (isEditMode) {
+            const now = new Date();
+            params.append("modificationDate", `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} ll ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+        }
+
+        try {
+            const res = await fetch(scriptURL, { method: "POST", body: params });
+            const data = await res.json();
+
+            if (data.result === "success") {
+                submitData.createdAt = data.date || new Date().toISOString();
+                submitData.updatedAt = isEditMode ? (data.modificationDate || new Date().toISOString()) : "";
+
+                Swal.fire({
+                    icon: "success", title: isEditMode ? "تم التعديل" : "تم التسجيل بنجاح",
+                    html: `
+                        <p class="mb-4 text-sm text-slate-600">تم حفظ بياناتك لدى اللجنة بنجاح.</p>
+                        <button type="button" id="successReceiptBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                            تحميل وصل التسجيل <i class="fa-solid fa-print"></i>
+                        </button>
+                    `,
+                    confirmButtonText: "عودة للوحة التحكم",
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        document.getElementById('successReceiptBtn').addEventListener('click', () => {
+                            openReceiptPreview(submitData, { actionSource: isEditMode ? "تعديل التسجيل" : "تسجيل جديد" });
+                        });
+                    }
+                }).then(() => window.location.href = 'employee_dashboard.html');
+            } else {
+                throw new Error(data.message || 'حدث خطأ غير متوقع.');
+            }
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'فشل الإرسال', text: err.message });
+            btn.innerHTML = orgText;
+            btn.disabled = false;
+        }
+    }
+
+    async function deleteRegistration(empId) {
+        Swal.fire({ title: 'جاري إلغاء التسجيل...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const params = new URLSearchParams();
+            params.append("action", "delete");
+            params.append("empId", empId);
+            params.append("loanType", "exceptional");
+
+            const res = await fetch(scriptURL, { method: "POST", body: params });
+            const data = await res.json();
+
+            if (data.result === "success") {
+                Swal.fire({ icon: 'success', title: 'تم الإلغاء', text: 'تم سحب تسجيلك من قاعدة البيانات بنجاح.' }).then(() => window.location.href = 'employee_dashboard.html');
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل إلغاء التسجيل.' }).then(() => window.location.href = 'employee_dashboard.html');
+        }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بوابة الولوج - لجنة الخدمات الاجتماعية توقرت</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+      tailwind.config = {
+          theme: {
+              extend: {
+                  fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                  colors: {
+                      primary: '#1976d2',
+                      primaryDark: '#0d47a1',
+                      accent: '#fb8c00'
+                  }
+              }
+          }
+      }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .glass-card {
+        @apply bg-white/30 backdrop-blur-md border border-white/50 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-6 sm:p-8 w-full mx-auto relative pt-14;
+        transition: all 0.4s ease-in-out;
+      }
+      .default-card-width {
+        @apply max-w-[420px];
+      }
+      .extended-card-width {
+        @apply w-[95%] sm:max-w-[600px] md:max-w-[750px] lg:max-w-[850px];
+      }
+      
+      .input-wrapper {
+        @apply relative mb-3;
+      }
+      .input-icon {
+        @apply absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-slate-400 text-sm;
+      }
+      .modern-input {
+        @apply w-full pr-10 pl-3 py-2.5 rounded-xl border border-slate-200 bg-white/90 focus:border-primary focus:bg-white focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all font-bold text-slate-800 placeholder-slate-400 text-sm shadow-sm;
+      }
+      .btn-primary {
+        @apply w-full bg-gradient-to-l from-primaryDark to-primary text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed text-sm mt-2 flex items-center justify-center gap-2;
+      }
+      .btn-success {
+        @apply w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-green-500/40 hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed text-sm mt-2 flex items-center justify-center gap-2;
+      }
+      .choice-card {
+        @apply bg-white/80 border border-slate-200 rounded-2xl p-3.5 cursor-pointer flex items-center gap-4 hover:border-primary hover:bg-blue-50/90 hover:shadow-md transition-all duration-300 mb-3;
+      }
+      .btn-back {
+        @apply absolute top-5 right-5 w-8 h-8 rounded-full bg-white/80 text-slate-800 flex items-center justify-center hover:bg-primary hover:text-white transition-colors cursor-pointer shadow-sm z-10;
+      }
+      .readonly-badge {
+        @apply bg-blue-50/90 border border-blue-200 text-blue-900 text-sm font-bold py-2.5 px-3 rounded-xl w-full text-right truncate shadow-sm cursor-not-allowed;
+      }
+      .form-label {
+        @apply text-[11px] font-black text-primaryDark mb-1.5 block drop-shadow-sm;
+      }
+    }
+
+    body { overflow-x: hidden; background-color: #f1f5f9; }
+    .hidden { display: none !important; }
+    .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(15px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    @keyframes float-spin {
+        0% { transform: translateY(0px) rotate(0deg); box-shadow: 0 5px 15px rgba(25, 118, 210, 0.2); }
+        50% { transform: translateY(-5px) rotate(5deg); box-shadow: 0 15px 25px rgba(25, 118, 210, 0.4); }
+        100% { transform: translateY(0px) rotate(0deg); box-shadow: 0 5px 15px rgba(25, 118, 210, 0.2); }
+    }
+    .overlap-logo {
+        position: absolute;
+        top: -45px;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        border: 4px solid white;
+        background-color: white;
+        object-fit: contain;
+        padding: 4px;
+        z-index: 20;
+        animation: float-spin 4s ease-in-out infinite;
+    }
+
+    .bg-animated { background-size: 200% 200%; animation: gradientMove 3s ease infinite; }
+    @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+    .password-strength { @apply h-1 bg-slate-200 rounded-full mt-1.5 overflow-hidden w-full; }
+    .strength-bar { @apply h-full w-0 transition-all duration-300 rounded-full; }
+
+
+    .upload-modal-container { @apply fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-300; }
+    .upload-modal-container.active { @apply opacity-100 pointer-events-auto; }
+    .upload-card { @apply bg-white rounded-3xl w-full max-w-[400px] overflow-hidden shadow-2xl transform scale-95 transition-transform duration-300 relative; }
+    .upload-modal-container.active .upload-card { @apply scale-100; }
+    
+    .upload-header { background: linear-gradient(135deg, #4f46e5, #2563eb); @apply p-6 text-center text-white relative; }
+    .upload-header h2 { @apply text-xl font-black mb-1; }
+    .upload-header p { @apply text-[11px] text-blue-100; }
+    
+    .doc-row { @apply flex items-start gap-4 p-4 border-b border-slate-100 relative cursor-pointer hover:bg-slate-50 transition-colors; }
+    .doc-icon { @apply text-2xl text-slate-400 mt-1; }
+    .doc-info { @apply flex-1 text-right; }
+    .doc-info h4 { @apply text-sm font-black text-slate-800 mb-1; }
+    .doc-info p { @apply text-[10px] text-slate-500 leading-relaxed; }
+    .doc-status { @apply absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center transition-colors; }
+    .doc-row.uploaded .doc-status { @apply border-green-500 bg-green-500 text-white; }
+    .doc-row.uploaded .doc-icon { @apply text-green-500; }
+    
+    .btn-upload-submit { background: linear-gradient(135deg, #4f46e5, #2563eb); @apply mx-4 mb-5 w-[calc(100%-32px)] text-white font-black py-3.5 rounded-xl shadow-lg hover:shadow-blue-500/40 transition-all flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed; }
+
+
+
+
+
+  </style>
+</head>
+<body class="font-cairo text-slate-800 flex flex-col min-h-screen selection:bg-primary selection:text-white">
+
+  <div class="fixed inset-0 z-[-2] bg-slate-900">
+    <img id="dynamicBg" src="" alt="خلفية" class="w-full h-full object-cover">
+    <div class="absolute inset-0 bg-slate-900/10"></div>
+  </div>
+
+  <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/40 rounded-full blur-[80px] z-[-1] pointer-events-none"></div>
+
+  <nav class="absolute w-full top-0 z-40 py-4 px-6 flex justify-between items-center">
+    <div class="flex items-center gap-2"></div>
+    <a href="index.html" class="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1.5 rounded-full font-bold shadow-sm hover:bg-white hover:text-primaryDark transition-all text-xs flex items-center gap-2">
+      العودة للرئيسية <i class="fa-solid fa-house"></i>
+    </a>
+  </nav>
+
+  <main class="flex-grow flex items-center justify-center px-4 py-10 w-full relative z-10">
+      
+      <div id="unifiedLoginView" class="glass-card default-card-width fade-in">
+        <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="الشعار" class="overlap-logo">
+        
+        <div class="text-center mb-6 mt-2">
+            <h1 class="text-2xl font-black text-primaryDark drop-shadow-md">مرحباً بك مجدداً</h1>
+            <p class="text-slate-900 font-extrabold text-[13px] mt-1.5 drop-shadow-sm">بوابة الخدمات الاجتماعية لعمال التربية</p>
+        </div>
+
+        <div class="input-wrapper">
+          <div class="input-icon"><i class="fa-solid fa-hashtag text-slate-600"></i></div>
+          <input type="text" id="loginCcp" class="modern-input" placeholder="رقم الحساب البريدي (بدون مفتاح)" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        </div>
+        
+        <div class="input-wrapper mb-2">
+          <div class="input-icon"><i class="fa-solid fa-lock text-slate-600"></i></div>
+          <input type="password" id="loginPassword" class="modern-input" placeholder="كلمة المرور">
+        </div>
+        
+        <div class="flex justify-between items-center mb-5 px-1">
+          <label class="flex items-center gap-2 text-[13px] font-black text-slate-900 cursor-pointer hover:text-primaryDark transition-colors drop-shadow-sm">
+            <input type="checkbox" id="loginRememberMe" class="w-4 h-4 text-primary rounded border-slate-400 focus:ring-primary focus:ring-2"> تذكرني
+          </label>
+          <a href="#" class="text-[13px] font-black text-slate-900 hover:text-primaryDark transition-colors underline drop-shadow-sm">نسيت كلمة المرور؟</a>
+        </div>
+
+        <button class="btn-primary bg-animated" onclick="processUnifiedLogin()">
+          تسجيل الدخول <i class="fa-solid fa-arrow-left-to-bracket"></i>
+        </button>
+        
+        <div class="mt-6 pt-4 border-t border-slate-400/30 text-center">
+          <p class="text-[14px] text-slate-900 font-extrabold drop-shadow-sm">مستخدم جديد؟ 
+            <button class="text-primaryDark font-black hover:text-primary transition-colors underline ml-1" onclick="switchView('selectionView')">إنشاء حساب الآن</button>
+          </p>
+        </div>
+      </div>
+
+      <div id="selectionView" class="glass-card default-card-width hidden">
+        <button class="btn-back" onclick="switchView('unifiedLoginView')"><i class="fa-solid fa-arrow-right"></i></button>
+        <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="الشعار" class="overlap-logo">
+        
+        <div class="text-center mb-6 mt-2">
+            <h1 class="text-2xl font-black text-primaryDark drop-shadow-md">إنشاء حساب</h1>
+            <p class="text-slate-900 font-extrabold text-[12px] mt-1 drop-shadow-sm">يرجى تحديد الفئة المهنية الخاصة بك</p>
+        </div>
+        
+        <div class="choice-card" onclick="switchView('employeeActivationView')">
+          <div class="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center text-primary text-xl shrink-0"><i class="fa-solid fa-user-tie"></i></div>
+          <div>
+            <h3 class="font-black text-sm text-primaryDark">موظف في القطاع</h3>
+            <p class="text-[10px] text-slate-700 font-bold mt-0.5">التسجيل برقم التعريف الوظيفي (16 رقم)</p>
+          </div>
+        </div>
+
+        <div class="choice-card" onclick="switchView('retireeActivationView')">
+          <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-accent text-xl shrink-0"><i class="fa-solid fa-user-group"></i></div>
+          <div>
+            <h3 class="font-black text-sm text-primaryDark">متقاعد أو أرملة</h3>
+            <p class="text-[10px] text-slate-700 font-bold mt-0.5">التسجيل برقم الحساب البريدي والمفتاح</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="employeeActivationView" class="glass-card extended-card-width hidden">
+        <button class="btn-back" onclick="switchView('selectionView')"><i class="fa-solid fa-arrow-right"></i></button>
+        <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="الشعار" class="overlap-logo !w-16 !h-16 !-top-8 !border-[3px]">
+        
+        <div class="text-center mb-2 mt-2">
+            <h1 class="text-2xl font-black text-primaryDark drop-shadow-md">تسجيل بيانات موظف</h1>
+        </div>
+
+        <div id="empActivationStep1" class="max-w-[400px] mx-auto mt-6">
+          <p class="text-center text-slate-900 font-extrabold text-[12px] mb-4 drop-shadow-sm">أدخل رقم التعريف الوظيفي لمطابقة بياناتك في قاعدة الوزارة</p>
+          <div class="input-wrapper">
+            <div class="input-icon"><i class="fa-solid fa-id-badge text-slate-600"></i></div>
+            <input type="text" id="setupEmpId" class="modern-input" placeholder="رقم التعريف الوظيفي (16 رقم)" maxlength="16" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+          </div>
+          <button class="btn-primary" onclick="fetchEmployeeData()">مطابقة البيانات <i class="fa-solid fa-magnifying-glass"></i></button>
+        </div>
+
+        <div id="empActivationStep2" class="hidden">
+          
+          <div class="bg-white/80 border border-slate-300 p-4 rounded-xl mb-6 shadow-inner">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-200 pb-2">
+                <span class="text-xs font-black text-primaryDark"><i class="fa-solid fa-circle-check text-green-600 ml-1"></i> البيانات المسحوبة آلياً</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <div><label class="form-label text-slate-500">الاسم واللقب</label><input type="text" id="regEmpName" class="readonly-badge" readonly></div>
+              <div><label class="form-label text-slate-500">الرقم الوظيفي</label><input type="text" id="regEmpIdLocked" class="readonly-badge" readonly></div>
+              <div><label class="form-label text-slate-500">تاريخ الميلاد</label><input type="text" id="regEmpBirth" class="readonly-badge" readonly></div>
+              <div><label class="form-label text-slate-500">الرتبة المهنية</label><input type="text" id="regEmpRank" class="readonly-badge" readonly></div>
+              <div><label class="form-label text-slate-500">مكان العمل</label><input type="text" id="regEmpWorkplace" class="readonly-badge" readonly></div>
+              <div><label class="form-label text-slate-500">تاريخ التوظيف</label><input type="text" id="regEmpEmploymentDate" class="readonly-badge" readonly></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+              
+              <div class="input-wrapper md:col-span-2 !mb-0">
+                  <label class="form-label">رقم التعريف الوطني (18 رقم)</label>
+                  <div class="relative">
+                      <div class="input-icon"><i class="fa-solid fa-id-card text-slate-600"></i></div>
+                      <input type="text" id="regEmpNIN" class="modern-input" placeholder="أدخل رقم التعريف الوطني" maxlength="18" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                  </div>
+              </div>
+
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">الحساب البريدي (بدون مفتاح)</label>
+                  <div class="relative">
+                      <div class="input-icon"><i class="fa-solid fa-money-check text-slate-600"></i></div>
+                      <input type="text" id="regEmpCcp" class="modern-input" placeholder="مثال: 0000000000" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                  </div>
+              </div>
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">المفتاح (Clé)</label>
+                  <input type="text" id="regEmpKey" class="modern-input text-center" placeholder="رقمين" maxlength="2" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+              </div>
+
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">دائرة العمل</label>
+                  <select id="regEmpWorkDistrict" class="modern-input cursor-pointer appearance-none !pr-8" onchange="updateMunicipalities('regEmpWorkDistrict', 'regEmpWorkMunicipality')">
+                      <option value="" disabled selected>اختر الدائرة</option>
+                  </select>
+                  <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+              </div>
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">بلدية العمل</label>
+                  <select id="regEmpWorkMunicipality" class="modern-input cursor-pointer appearance-none !pr-8" disabled>
+                      <option value="" disabled selected>اختر البلدية</option>
+                  </select>
+                  <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+              </div>
+
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">دائرة الإقامة</label>
+                  <select id="regEmpResDistrict" class="modern-input cursor-pointer appearance-none !pr-8" onchange="updateMunicipalities('regEmpResDistrict', 'regEmpResMunicipality')">
+                      <option value="" disabled selected>اختر الدائرة</option>
+                  </select>
+                  <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+              </div>
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">بلدية الإقامة</label>
+                  <select id="regEmpResMunicipality" class="modern-input cursor-pointer appearance-none !pr-8" disabled>
+                      <option value="" disabled selected>اختر البلدية</option>
+                  </select>
+                  <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+              </div>
+
+              <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-5 gap-x-6 gap-y-4">
+                  <div class="input-wrapper !mb-0 md:col-span-2">
+                      <label class="form-label">رقم الهاتف</label>
+                      <div class="relative">
+                          <div class="input-icon"><i class="fa-solid fa-phone text-slate-600"></i></div>
+                          <input type="tel" id="regEmpPhone" class="modern-input" dir="ltr" placeholder="0X XX XX XX XX" maxlength="14" oninput="formatPhoneSimple(this)">
+                      </div>
+                  </div>
+                  <div class="input-wrapper !mb-0 md:col-span-3">
+                      <label class="form-label">البريد الإلكتروني (@gmail.com)</label>
+                      <div class="relative">
+                          <div class="input-icon"><i class="fa-solid fa-envelope text-slate-600"></i></div>
+                          <input type="email" id="regEmpEmail" class="modern-input" dir="ltr" placeholder="example@gmail.com">
+                      </div>
+                  </div>
+              </div>
+
+              <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                  <div class="input-wrapper !mb-0">
+                      <label class="form-label">الحالة العائلية</label>
+                      <div class="relative">
+                          <select id="regEmpFamilyStatus" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleFamilyStatusChange('regEmp')">
+                              <option value="" disabled selected>اختر الحالة العائلية</option>
+                              <option value="أعزب(ة)">أعزب(ة)</option>
+                              <option value="متزوج(ة)">متزوج(ة)</option>
+                              <option value="مطلق(ة)">مطلق(ة)</option>
+                              <option value="أرمل(ة)">أرمل(ة)</option>
+                          </select>
+                          <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                      </div>
+                  </div>
+                  <div id="regEmpChildrenCountContainer" class="input-wrapper !mb-0 hidden">
+                      <label class="form-label">عدد الأولاد</label>
+                      <input type="number" id="regEmpChildrenCount" class="modern-input" placeholder="أدخل عدد الأولاد" min="0">
+                  </div>
+              </div>
+
+              <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                  <div class="input-wrapper !mb-0">
+                      <label class="form-label">هل تكفل أفراداً آخرين؟</label>
+                      <div class="relative">
+                          <select id="regEmpSponsorship" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleSponsorshipChange('regEmp')">
+                              <option value="لا" selected>لا</option>
+                              <option value="نعم">نعم</option>
+                          </select>
+                          <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                      </div>
+                  </div>
+                  <div id="regEmpSponsorshipCountContainer" class="input-wrapper !mb-0 hidden">
+                      <label class="form-label">عدد الأفراد المكفولين</label>
+                      <input type="number" id="regEmpSponsoredCount" class="modern-input" placeholder="عدد المكفولين" min="1">
+                  </div>
+              </div>
+
+              <div id="regEmpSponsorshipAlert" class="hidden md:col-span-2 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold p-3 rounded-lg shadow-inner">
+                  <i class="fa-solid fa-circle-exclamation mr-1"></i> تنبيه: يجب إرفاق وثيقة رسمية لإثبات الكفالة لاحقاً، وإلا لن يتم احتسابهم.
+              </div>
+
+              <div class="input-wrapper md:col-span-2 !mb-0 border-t border-slate-300/50 pt-4 mt-2">
+                  <label class="form-label text-sm text-primary">ثنائي القطاع (هل الزوج/ة يعمل أو متقاعد بقطاع التربية؟)</label>
+                  <div class="relative">
+                      <select id="regEmpDualSector" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleDualSectorChange('regEmp')">
+                          <option value="لا" selected>لا</option>
+                          <option value="نعم">نعم</option>
+                      </select>
+                      <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                  </div>
+              </div>
+
+              <div id="regEmpDualSectorContainer" class="hidden md:col-span-2 bg-blue-50/50 border border-blue-200 p-4 rounded-xl shadow-inner grid grid-cols-1 gap-4">
+                  <div>
+                      <label class="form-label">بيانات الزوج(ة) (الصفة ورقم التحقق)</label>
+                      <div class="flex flex-col sm:flex-row gap-2">
+                          <div class="sm:w-1/3 relative">
+                              <select id="regEmpSpouseStatus" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleSpouseStatusChange('regEmp')">
+                                  <option value="موظف(ة)" selected>موظف(ة)</option>
+                                  <option value="متقاعد(ة)">متقاعد(ة)</option>
+                              </select>
+                              <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                          </div>
+                          
+                          <div id="regEmpSpouseEmpIdContainer" class="sm:w-2/3 flex gap-2">
+                              <input type="text" id="regEmpSpouseEmpId" class="modern-input !mb-0 w-full" placeholder="الرقم الوظيفي (16 رقم)" maxlength="16" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                              <button type="button" class="btn-primary !w-auto !py-2 !mt-0 !px-6" onclick="verifySpouse('employee', 'regEmp')">تحقق</button>
+                          </div>
+                          <div id="regEmpSpouseCcpContainer" class="sm:w-2/3 flex gap-2 hidden">
+                              <input type="text" id="regEmpSpouseCcp" class="modern-input !mb-0 w-full" placeholder="الحساب البريدي (10 أرقام)" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                              <button type="button" class="btn-primary !w-auto !py-2 !mt-0 !px-6" onclick="verifySpouse('retiree', 'regEmp')">تحقق</button>
+                          </div>
+                      </div>
+                  </div>
+                  <div>
+                      <label class="form-label">الاسم الكامل المطابق للزوج(ة)</label>
+                      <input type="text" id="regEmpSpouseName" class="modern-input !bg-white/50 !border-slate-300 !text-slate-500 pointer-events-none" readonly placeholder="سيظهر الاسم هنا بعد التحقق الناجح">
+                  </div>
+              </div>
+
+              <div class="input-wrapper !mb-0 border-t border-slate-300/50 pt-4 mt-2">
+                  <label class="form-label">إنشاء كلمة مرور</label>
+                  <div class="relative">
+                      <div class="input-icon"><i class="fa-solid fa-lock text-slate-600"></i></div>
+                      <input type="password" id="regEmpPwd" class="modern-input" placeholder="كلمة المرور" oninput="evaluatePassword('regEmpPwd', 'empPwdStrength', 'empPwdText')">
+                  </div>
+                  <div class="flex items-center mt-1.5">
+                      <div class="password-strength flex-grow !mt-0"><div id="empPwdStrength" class="strength-bar"></div></div>
+                      <span id="empPwdText" class="text-[10px] font-bold text-slate-500 mr-2 w-10 text-center transition-colors"></span>
+                  </div>
+              </div>
+              <div class="input-wrapper !mb-0 border-t border-slate-300/50 pt-4 mt-2">
+                  <label class="form-label">تأكيد كلمة المرور</label>
+                  <div class="relative">
+                      <div class="input-icon"><i class="fa-solid fa-lock text-slate-600"></i></div>
+                      <input type="password" id="regEmpPwdConfirm" class="modern-input" placeholder="أعد كتابة كلمة المرور">
+                  </div>
+              </div>
+          </div>
+
+          <div class="mt-8 md:max-w-md mx-auto">
+            <button class="btn-success !py-3.5 !text-base" onclick="submitEmployeeRegistration()">تأكيد وتسجيل الحساب <i class="fa-solid fa-user-check"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div id="retireeActivationView" class="glass-card extended-card-width hidden">
+        <button class="btn-back" onclick="switchView('selectionView')"><i class="fa-solid fa-arrow-right"></i></button>
+        <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="الشعار" class="overlap-logo !w-16 !h-16 !-top-8 !border-[3px]">
+        
+        <div class="text-center mb-2 mt-2">
+            <h1 class="text-xl font-black text-primaryDark drop-shadow-md">تسجيل بيانات متقاعد / أرملة</h1>
+        </div>
+
+        <div id="retActivationStep1" class="max-w-[400px] mx-auto mt-6">
+          <p class="text-center text-slate-900 font-extrabold text-[12px] mb-4 drop-shadow-sm">يُرجى إدخال رقم الحساب البريدي والمفتاح للبدء</p>
+          <div class="grid grid-cols-5 gap-2 mb-4">
+            <div class="col-span-3 input-wrapper !mb-0">
+                <div class="input-icon"><i class="fa-solid fa-money-check text-slate-600"></i></div>
+                <input type="text" id="setupRetCcp" class="modern-input !pr-8" placeholder="الحساب البريدي (10)" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            </div>
+            <div class="col-span-2 input-wrapper !mb-0">
+                <input type="text" id="setupRetKey" class="modern-input text-center !pr-3 !pl-3" placeholder="المفتاح (2)" maxlength="2" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+            </div>
+          </div>
+          <button class="btn-primary" onclick="verifyRetireeCcp()">متابعة <i class="fa-solid fa-arrow-left"></i></button>
+        </div>
+
+        <div id="retActivationStep2" class="hidden">
+          <input type="hidden" id="regRetCcpLocked">
+          <input type="hidden" id="regRetKeyLocked">
+
+          <div class="bg-white/80 border border-slate-300 p-4 rounded-xl mb-6 shadow-inner">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-200 pb-2">
+                <span class="text-xs font-black text-primaryDark"><i class="fa-solid fa-circle-check text-green-600 ml-1"></i> بيانات الحساب البريدي (تأكيد)</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                  <label class="form-label text-slate-500">الحساب البريدي</label>
+                  <input type="text" id="regRetCcpBadge" class="readonly-badge" readonly>
+              </div>
+              <div>
+                  <label class="form-label text-slate-500">المفتاح</label>
+                  <input type="text" id="regRetKeyBadge" class="readonly-badge" readonly>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-4">
+              
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">الاسم الكامل (عربي)</label>
+                  <div class="relative">
+                      <div class="input-icon"><i class="fa-solid fa-user text-slate-600"></i></div>
+                      <input type="text" id="regRetFirstName" class="modern-input" placeholder="الاسم" oninput="allowArabicOnly(this)">
+                  </div>
+              </div>
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">اللقب الكامل (عربي)</label>
+                  <div class="relative">
+                      <div class="input-icon"><i class="fa-solid fa-user text-slate-600"></i></div>
+                      <input type="text" id="regRetLastName" class="modern-input" placeholder="اللقب" oninput="allowArabicOnly(this)">
+                  </div>
+              </div>
+
+              <div class="input-wrapper md:col-span-2 !mb-0">
+                  <label class="form-label">تاريخ الميلاد (يوم / شهر / سنة)</label>
+                  <div class="grid grid-cols-3 gap-2" dir="ltr">
+                      <input type="number" id="regRetBirthYear" class="modern-input text-center" placeholder="السنة (YYYY)" min="1900" max="2010">
+                      <input type="number" id="regRetBirthMonth" class="modern-input text-center" placeholder="الشهر (MM)" min="1" max="12">
+                      <input type="number" id="regRetBirthDay" class="modern-input text-center" placeholder="اليوم (DD)" min="1" max="31">
+                  </div>
+              </div>
+
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">رقم التعريف الوطني (18 رقم)</label>
+                  <div class="relative">
+                      <div class="input-icon"><i class="fa-solid fa-id-card text-slate-600"></i></div>
+                      <input type="text" id="regRetNIN" class="modern-input" placeholder="أدخل رقم التعريف الوطني" maxlength="18" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                  </div>
+              </div>
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">الصفة</label>
+                  <div class="relative">
+                      <select id="regRetStatus" class="modern-input cursor-pointer appearance-none !pr-8">
+                          <option value="متقاعد(ة)" selected>متقاعد(ة)</option>
+                          <option value="أرمل(ة)">أرمل(ة)</option>
+                      </select>
+                      <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                  </div>
+              </div>
+
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">دائرة الإقامة</label>
+                  <select id="regRetResDistrict" class="modern-input cursor-pointer appearance-none !pr-8" onchange="updateMunicipalities('regRetResDistrict', 'regRetResMunicipality')">
+                      <option value="" disabled selected>اختر الدائرة</option>
+                  </select>
+                  <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+              </div>
+              <div class="input-wrapper !mb-0">
+                  <label class="form-label">بلدية الإقامة</label>
+                  <select id="regRetResMunicipality" class="modern-input cursor-pointer appearance-none !pr-8" disabled>
+                      <option value="" disabled selected>اختر البلدية</option>
+                  </select>
+                  <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+              </div>
+
+              <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-5 gap-x-6 gap-y-4">
+                  <div class="input-wrapper !mb-0 md:col-span-2">
+                      <label class="form-label">رقم الهاتف</label>
+                      <div class="relative">
+                          <div class="input-icon"><i class="fa-solid fa-phone text-slate-600"></i></div>
+                          <input type="tel" id="regRetPhone" class="modern-input" dir="ltr" placeholder="0X XX XX XX XX" maxlength="14" oninput="formatPhoneSimple(this)">
+                      </div>
+                  </div>
+                  <div class="input-wrapper !mb-0 md:col-span-3">
+                      <label class="form-label">البريد الإلكتروني (@gmail.com)</label>
+                      <div class="relative">
+                          <div class="input-icon"><i class="fa-solid fa-envelope text-slate-600"></i></div>
+                          <input type="email" id="regRetEmail" class="modern-input" dir="ltr" placeholder="example@gmail.com">
+                      </div>
+                  </div>
+              </div>
+
+              <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                  <div class="input-wrapper !mb-0">
+                      <label class="form-label">الحالة العائلية</label>
+                      <div class="relative">
+                          <select id="regRetFamilyStatus" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleFamilyStatusChange('regRet')">
+                              <option value="" disabled selected>اختر الحالة العائلية</option>
+                              <option value="أعزب(ة)">أعزب(ة)</option>
+                              <option value="متزوج(ة)">متزوج(ة)</option>
+                              <option value="مطلق(ة)">مطلق(ة)</option>
+                              <option value="أرمل(ة)">أرمل(ة)</option>
+                          </select>
+                          <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                      </div>
+                  </div>
+                  <div id="regRetChildrenCountContainer" class="input-wrapper !mb-0 hidden">
+                      <label class="form-label">عدد الأولاد</label>
+                      <input type="number" id="regRetChildrenCount" class="modern-input" placeholder="أدخل عدد الأولاد" min="0">
+                  </div>
+              </div>
+
+              <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                  <div class="input-wrapper !mb-0">
+                      <label class="form-label">هل تكفل أفراداً آخرين؟</label>
+                      <div class="relative">
+                          <select id="regRetSponsorship" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleSponsorshipChange('regRet')">
+                              <option value="لا" selected>لا</option>
+                              <option value="نعم">نعم</option>
+                          </select>
+                          <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                      </div>
+                  </div>
+                  <div id="regRetSponsorshipCountContainer" class="input-wrapper !mb-0 hidden">
+                      <label class="form-label">عدد الأفراد المكفولين</label>
+                      <input type="number" id="regRetSponsoredCount" class="modern-input" placeholder="عدد المكفولين" min="1">
+                  </div>
+              </div>
+
+              <div id="regRetSponsorshipAlert" class="hidden md:col-span-2 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold p-3 rounded-lg shadow-inner">
+                  <i class="fa-solid fa-circle-exclamation mr-1"></i> تنبيه: يجب إرفاق وثيقة رسمية لإثبات الكفالة لاحقاً، وإلا لن يتم احتسابهم.
+              </div>
+
+              <div class="input-wrapper md:col-span-2 !mb-0 border-t border-slate-300/50 pt-4 mt-2">
+                  <label class="form-label text-sm text-primary">ثنائي القطاع (هل الزوج/ة يعمل أو متقاعد بقطاع التربية؟)</label>
+                  <div class="relative">
+                      <select id="regRetDualSector" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleDualSectorChange('regRet')">
+                          <option value="لا" selected>لا</option>
+                          <option value="نعم">نعم</option>
+                      </select>
+                      <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                  </div>
+              </div>
+
+              <div id="regRetDualSectorContainer" class="hidden md:col-span-2 bg-blue-50/50 border border-blue-200 p-4 rounded-xl shadow-inner grid grid-cols-1 gap-4">
+                  <div>
+                      <label class="form-label">بيانات الزوج(ة) (الصفة ورقم التحقق)</label>
+                      <div class="flex flex-col sm:flex-row gap-2">
+                          <div class="sm:w-1/3 relative">
+                              <select id="regRetSpouseStatus" class="modern-input cursor-pointer appearance-none !pr-8" onchange="handleSpouseStatusChange('regRet')">
+                                  <option value="موظف(ة)" selected>موظف(ة)</option>
+                                  <option value="متقاعد(ة)">متقاعد(ة)</option>
+                              </select>
+                              <div class="input-icon"><i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i></div>
+                          </div>
+                          
+                          <div id="regRetSpouseEmpIdContainer" class="sm:w-2/3 flex gap-2">
+                              <input type="text" id="regRetSpouseEmpId" class="modern-input !mb-0 w-full" placeholder="الرقم الوظيفي (16 رقم)" maxlength="16" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                              <button type="button" class="btn-primary !w-auto !py-2 !mt-0 !px-6" onclick="verifySpouse('employee', 'regRet')">تحقق</button>
+                          </div>
+                          <div id="regRetSpouseCcpContainer" class="sm:w-2/3 flex gap-2 hidden">
+                              <input type="text" id="regRetSpouseCcp" class="modern-input !mb-0 w-full" placeholder="الحساب البريدي (10 أرقام)" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                              <button type="button" class="btn-primary !w-auto !py-2 !mt-0 !px-6" onclick="verifySpouse('retiree', 'regRet')">تحقق</button>
+                          </div>
+                      </div>
+                  </div>
+                  <div>
+                      <label class="form-label">الاسم الكامل المطابق للزوج(ة)</label>
+                      <input type="text" id="regRetSpouseName" class="modern-input !bg-white/50 !border-slate-300 !text-slate-500 pointer-events-none" readonly placeholder="سيظهر الاسم هنا بعد التحقق الناجح">
+                  </div>
+              </div>
+
+              <div class="input-wrapper !mb-0 border-t border-slate-300/50 pt-4 mt-2">
+                  <label class="form-label">إنشاء كلمة مرور</label>
+                  <div class="relative">
+                      <div class="input-icon"><i class="fa-solid fa-lock text-slate-600"></i></div>
+                      <input type="password" id="regRetPwd" class="modern-input" placeholder="كلمة المرور" oninput="evaluatePassword('regRetPwd', 'retPwdStrength', 'retPwdText')">
+                  </div>
+                  <div class="flex items-center mt-1.5">
+                      <div class="password-strength flex-grow !mt-0"><div id="retPwdStrength" class="strength-bar"></div></div>
+                      <span id="retPwdText" class="text-[10px] font-bold text-slate-500 mr-2 w-10 text-center transition-colors"></span>
+                  </div>
+              </div>
+              <div class="input-wrapper !mb-0 border-t border-slate-300/50 pt-4 mt-2">
+                  <label class="form-label">تأكيد كلمة المرور</label>
+                  <div class="relative">
+                      <div class="input-icon"><i class="fa-solid fa-lock text-slate-600"></i></div>
+                      <input type="password" id="regRetPwdConfirm" class="modern-input" placeholder="أعد كتابة كلمة المرور">
+                  </div>
+              </div>
+          </div>
+
+          <div class="mt-8 md:max-w-md mx-auto">
+            <button class="btn-success !py-3.5 !text-base" onclick="submitRetireeRegistration()">تأكيد وتسجيل الحساب <i class="fa-solid fa-user-check"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div id="verifyView" class="glass-card default-card-width hidden text-center">
+        <button class="btn-back" onclick="cancelVerification()"><i class="fa-solid fa-arrow-right"></i></button>
+        <div class="w-16 h-16 bg-gradient-to-tr from-blue-100 to-blue-50 text-primary rounded-full flex items-center justify-center text-2xl mx-auto mb-4 shadow-inner border border-blue-200 mt-2">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <h1 class="text-2xl font-black text-primaryDark mb-1">تفعيل الحساب</h1>
+        <p class="text-slate-800 font-bold mb-6 text-[12px] leading-relaxed px-4" id="verifyInstruction">تم إرسال رمز التفعيل. يرجى التحقق من بريدك الإلكتروني.</p>
+        
+        <div class="mb-5">
+          <input type="text" id="verifyCodeInput" class="form-control !text-2xl !tracking-[0.4em] !font-black !text-primaryDark !py-3 !bg-white/90 shadow-inner w-full text-center rounded-xl border border-slate-300" placeholder="00000000" maxlength="8" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+        </div>
+        <button class="btn-success mb-4" onclick="confirmVerification()">تفعيل الحساب <i class="fa-solid fa-unlock-keyhole"></i></button>
+        
+        <div class="pt-4 border-t border-slate-300/60">
+            <div id="timerContainer" class="hidden text-[11px] text-slate-800 font-bold mb-3 bg-white/60 py-1.5 rounded-lg border border-slate-300">
+                إعادة الإرسال متاحة بعد: <span id="countdownTimer" dir="ltr" class="text-primaryDark font-black ml-1">10:00</span>
+            </div>
+            <button type="button" id="btnResendCode" class="w-full bg-white/80 hover:bg-white text-slate-800 font-black py-2 rounded-xl transition-all border border-slate-300 shadow-sm text-xs flex justify-center items-center gap-2 opacity-50 cursor-not-allowed" disabled onclick="requestVerificationCode()">إرسال رمز جديد <i class="fa-solid fa-rotate-right"></i></button>
+        </div>
+      </div>
+
+  </main>
+  
+
+
+<div id="documentUploadModal" class="upload-modal-container">
+    <div class="upload-card">
+      <div class="upload-header">
+        <i class="fa-solid fa-robot text-4xl mb-3 drop-shadow-md"></i>
+        <h2>واجهة تفعيل الحساب</h2>
+        <p>اقرأ هذه التعليمات بعناية قبل المتابعة</p>
+      </div>
+
+      <div class="max-h-[50vh] overflow-y-auto custom-scrollbar">
+        <input type="file" id="fileWorkDoc" accept="image/*" class="hidden" onchange="compressAndSelectFile(this, 'workDoc')">
+        <input type="file" id="fileCcpDoc" accept="image/*" class="hidden" onchange="compressAndSelectFile(this, 'ccpDoc')">
+        <input type="file" id="fileIdDoc" accept="image/*" class="hidden" onchange="compressAndSelectFile(this, 'idDoc')">
+
+        <div id="row-workDoc" class="doc-row" onclick="document.getElementById('fileWorkDoc').click()">
+          <div class="doc-info">
+            <h4 id="workDocTitle">شهادة العمل أو مقرر الإحالة على التقاعد</h4>
+            <p>يجب أن تكون الشهادة حديثة وواضحة.</p>
+          </div>
+          <div class="doc-icon"><i class="fa-regular fa-file-lines"></i></div>
+          <div class="doc-status"><i class="fa-solid fa-check text-[10px] opacity-0"></i></div>
+        </div>
+
+        <div id="row-ccpDoc" class="doc-row" onclick="document.getElementById('fileCcpDoc').click()">
+          <div class="doc-info">
+            <h4>وثيقة حساب CCP</h4>
+            <p>صورة واضحة لصفحة الحساب أو الشيك البريدي.</p>
+          </div>
+          <div class="doc-icon"><i class="fa-solid fa-money-check-dollar"></i></div>
+          <div class="doc-status"><i class="fa-solid fa-check text-[10px] opacity-0"></i></div>
+        </div>
+
+        <div id="row-idDoc" class="doc-row border-none" onclick="document.getElementById('fileIdDoc').click()">
+          <div class="doc-info">
+            <h4>بطاقة التعريف الوطنية</h4>
+            <p>صورة واضحة للوجه الأمامي من بطاقة التعريف الوطنية.</p>
+          </div>
+          <div class="doc-icon"><i class="fa-regular fa-address-card"></i></div>
+          <div class="doc-status"><i class="fa-solid fa-check text-[10px] opacity-0"></i></div>
+        </div>
+      </div>
+
+      <button id="btnSubmitDocuments" class="btn-upload-submit" disabled onclick="submitUploadedDocuments()">
+        يرجى رفع جميع الوثائق على شكل صور للبدء
+      </button>
+    </div>
+  </div>
+
+  <script>
+    async function sendEmailViaGAS(email, code, fullName) {
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, name: fullName, code: code })
+            });
+            return true;
+        } catch (error) {
+            console.error("Error sending email:", error);
+            return false;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const bgImages = [
+        "https://lh3.googleusercontent.com/d/1i6isLnMztMiw2j7bgPNC4Phg9kWg7E3Q",
+        "https://lh3.googleusercontent.com/d/1SjXkF89C6kXYn1ssrEeW15zO45LRJUKl"
+      ];
+      const bgEl = document.getElementById('dynamicBg');
+      let lastIndex = localStorage.getItem('cwoste_bg_index');
+      let newIndex = 0;
+      if (lastIndex !== null) { newIndex = parseInt(lastIndex) === 0 ? 1 : 0; }
+      localStorage.setItem('cwoste_bg_index', newIndex);
+      bgEl.src = bgImages[newIndex];
+      
+      initDistricts(); 
+    });
+
+    const baladiyaMap = {
+      "توقرت": ["توقرت", "النزلة", "تبسبست", "الزاوية العابدية"],
+      "تماسين": ["تماسين", "بلدة عمر"],
+      "المقارين": ["المقارين", "سيدي سليمان"],
+      "الحجيرة": ["الحجيرة", "العالية"],
+      "الطيبات": ["الطيبات", "المنقر", "ابن ناصر"]
+    };
+
+    function initDistricts() {
+        const districtSelects = ['regEmpWorkDistrict', 'regEmpResDistrict', 'regRetResDistrict'];
+        const districts = Object.keys(baladiyaMap);
+        districtSelects.forEach(id => {
+            const select = document.getElementById(id);
+            if(select) {
+                districts.forEach(d => {
+                    const option = document.createElement('option');
+                    option.value = d;
+                    option.textContent = d;
+                    select.appendChild(option);
+                });
+            }
+        });
+    }
+
+    function updateMunicipalities(districtSelectId, municipalitySelectId) {
+        const district = document.getElementById(districtSelectId).value;
+        const munSelect = document.getElementById(municipalitySelectId);
+        
+        munSelect.innerHTML = '<option value="" disabled selected>اختر البلدية</option>';
+        if(district && baladiyaMap[district]) {
+            baladiyaMap[district].forEach(m => {
+                const option = document.createElement('option');
+                option.value = m;
+                option.textContent = m;
+                munSelect.appendChild(option);
+            });
+            munSelect.disabled = false;
+        } else {
+            munSelect.disabled = true;
+        }
+    }
+
+    function handleFamilyStatusChange(prefix) {
+        const val = document.getElementById(prefix + 'FamilyStatus').value;
+        const childContainer = document.getElementById(prefix + 'ChildrenCountContainer');
+        if(val && val !== 'أعزب(ة)') {
+            childContainer.classList.remove('hidden');
+        } else {
+            childContainer.classList.add('hidden');
+            document.getElementById(prefix + 'ChildrenCount').value = '';
+        }
+    }
+
+    function handleSponsorshipChange(prefix) {
+        const val = document.getElementById(prefix + 'Sponsorship').value;
+        const countContainer = document.getElementById(prefix + 'SponsorshipCountContainer');
+        const alertBox = document.getElementById(prefix + 'SponsorshipAlert');
+        if(val === 'نعم') {
+            countContainer.classList.remove('hidden');
+            alertBox.classList.remove('hidden');
+        } else {
+            countContainer.classList.add('hidden');
+            alertBox.classList.add('hidden');
+            document.getElementById(prefix + 'SponsoredCount').value = '';
+        }
+    }
+
+    function handleDualSectorChange(prefix) {
+        const val = document.getElementById(prefix + 'DualSector').value;
+        const container = document.getElementById(prefix + 'DualSectorContainer');
+        if(val === 'نعم') {
+            container.classList.remove('hidden');
+        } else {
+            container.classList.add('hidden');
+            document.getElementById(prefix + 'SpouseName').value = '';
+            document.getElementById(prefix + 'SpouseName').classList.replace('!bg-green-100', '!bg-white/50');
+            document.getElementById(prefix + 'SpouseName').classList.replace('!text-green-800', '!text-slate-500');
+            document.getElementById(prefix + 'SpouseEmpId').value = '';
+            document.getElementById(prefix + 'SpouseCcp').value = '';
+        }
+    }
+
+    function handleSpouseStatusChange(prefix) {
+        const val = document.getElementById(prefix + 'SpouseStatus').value;
+        document.getElementById(prefix + 'SpouseName').value = '';
+        document.getElementById(prefix + 'SpouseName').classList.replace('!bg-green-100', '!bg-white/50');
+        document.getElementById(prefix + 'SpouseName').classList.replace('!text-green-800', '!text-slate-500');
+        
+        if(val === 'موظف(ة)') {
+            document.getElementById(prefix + 'SpouseEmpIdContainer').classList.remove('hidden');
+            document.getElementById(prefix + 'SpouseCcpContainer').classList.add('hidden');
+        } else {
+            document.getElementById(prefix + 'SpouseEmpIdContainer').classList.add('hidden');
+            document.getElementById(prefix + 'SpouseCcpContainer').classList.remove('hidden');
+        }
+    }
+
+    function formatFirebaseDate(timestamp) {
+        if (!timestamp) return 'غير متوفر';
+        if (timestamp.toDate) { return timestamp.toDate().toLocaleDateString('en-GB'); }
+        if (timestamp.seconds) { return new Date(timestamp.seconds * 1000).toLocaleDateString('en-GB'); }
+        return timestamp; 
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
+      authDomain: "databaseemploye.firebaseapp.com",
+      projectId: "databaseemploye",
+      storageBucket: "databaseemploye.firebasestorage.app",
+      messagingSenderId: "408231477466",
+      appId: "1:408231477466:web:e3bf5bd3eaca7cdcd3a5e3",
+      measurementId: "G-DW8QJ5B231"
+    };
+
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const db = firebase.firestore();
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwlnUBPvsWbVDYmftbgLClzNYvlGB8Bg6CbWHyS7mjjzB6T9Bfaay-gMWjgN-ZrpQt_/exec";
+    let countdownInterval = null;
+
+    function switchView(targetId) {
+      document.querySelectorAll('.glass-card').forEach(panel => {
+        panel.classList.add('hidden');
+        panel.classList.remove('fade-in');
+      });
+      const target = document.getElementById(targetId);
+      target.classList.remove('hidden');
+      
+      if(targetId === 'employeeActivationView') {
+        document.getElementById('empActivationStep1').classList.remove('hidden');
+        document.getElementById('empActivationStep2').classList.add('hidden');
+        document.getElementById('setupEmpId').value = "";
+      }
+      if(targetId === 'retireeActivationView') {
+        document.getElementById('retActivationStep1').classList.remove('hidden');
+        document.getElementById('retActivationStep2').classList.add('hidden');
+        document.getElementById('setupRetCcp').value = "";
+        document.getElementById('setupRetKey').value = "";
+      }
+      if(targetId === 'unifiedLoginView') {
+        document.getElementById('loginCcp').value = "";
+        document.getElementById('loginPassword').value = "";
+      }
+      void target.offsetWidth; 
+      target.classList.add('fade-in');
+    }
+
+    function showVerificationView(autoSent) {
+        document.getElementById('verifyCodeInput').value = "";
+        clearInterval(countdownInterval);
+
+        if (autoSent) {
+            document.getElementById('verifyInstruction').textContent = "تم إرسال رمز التفعيل بنجاح. يرجى التحقق من صندوق الوارد أو البريد المزعج (Spam).";
+            startTimer();
+        } else {
+            document.getElementById('verifyInstruction').textContent = "حسابك غير مفعل بعد. يرجى طلب رمز التفعيل لإرساله إلى بريدك الإلكتروني.";
+            const resendBtn = document.getElementById('btnResendCode');
+            document.getElementById('timerContainer').classList.add('hidden');
+            resendBtn.classList.remove('hidden');
+            resendBtn.disabled = false;
+            resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            resendBtn.innerHTML = 'إرسال رمز التفعيل <i class="fa-solid fa-paper-plane"></i>';
+        }
+        switchView('verifyView');
+    }
+
+    function showToast(icon, title) { Swal.fire({ toast: true, position: 'top-end', icon: icon, title: title, showConfirmButton: false, timer: 3000, timerProgressBar: true }); }
+    function allowArabicOnly(input) { input.value = input.value.replace(/[^\u0600-\u06FF\s]/g, ''); }
+    function cleanPhone(phoneStr) { return phoneStr.replace(/\s/g, ''); }
+
+    function formatPhoneSimple(input) {
+      let value = input.value.replace(/\D/g, '').slice(0, 10);
+      if (value.length > 0) {
+        const parts = [];
+        for (let i = 0; i < value.length; i += 2) { parts.push(value.slice(i, i + 2)); }
+        input.value = parts.join(' ');
+      } else { input.value = ''; }
+    }
+
+    function evaluatePassword(inputId, barId, textId) {
+      const pwd = document.getElementById(inputId).value;
+      const bar = document.getElementById(barId);
+      const textEl = document.getElementById(textId);
+      let strength = 0;
+      
+      if(pwd.length >= 8) strength++;
+      if(/[A-Z]/.test(pwd) || /[a-z]/.test(pwd) || /[\u0600-\u06FF]/.test(pwd)) strength++;
+      if(/[0-9]/.test(pwd)) strength++;
+      if(/[^A-Za-z0-9\u0600-\u06FF]/.test(pwd)) strength++;
+
+      if(pwd.length === 0) {
+         bar.style.width = '0%';
+         if(textEl) textEl.textContent = '';
+         return false;
+      }
+
+      switch(strength) {
+        case 0: 
+        case 1: 
+          bar.style.width = '25%'; bar.style.backgroundColor = '#ef4444'; 
+          if(textEl) { textEl.textContent = 'ضعيفة'; textEl.className = 'text-[10px] font-bold text-red-500 mr-2 w-10 text-center transition-colors'; }
+          break;
+        case 2: 
+          bar.style.width = '50%'; bar.style.backgroundColor = '#f59e0b'; 
+          if(textEl) { textEl.textContent = 'متوسطة'; textEl.className = 'text-[10px] font-bold text-amber-500 mr-2 w-10 text-center transition-colors'; }
+          break;
+        case 3: 
+          bar.style.width = '75%'; bar.style.backgroundColor = '#3b82f6'; 
+          if(textEl) { textEl.textContent = 'جيدة'; textEl.className = 'text-[10px] font-bold text-blue-500 mr-2 w-10 text-center transition-colors'; }
+          break;
+        case 4: 
+          bar.style.width = '100%'; bar.style.backgroundColor = '#10b981'; 
+          if(textEl) { textEl.textContent = 'قوية'; textEl.className = 'text-[10px] font-bold text-green-500 mr-2 w-10 text-center transition-colors'; }
+          break;
+      }
+      return strength >= 2;
+    }
+
+    function validateEmailPhone(email, rawPhone) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+      const cleanPhoneNumber = cleanPhone(rawPhone);
+      const phoneRegex = /^(05|06|07)[0-9]{8}$/;
+      if (!emailRegex.test(email)) return "يجب أن يكون البريد الإلكتروني من نطاق @gmail.com";
+      if (!phoneRegex.test(cleanPhoneNumber) || cleanPhoneNumber.length !== 10) return "رقم الهاتف غير صالح (10 أرقام ويبدأ بـ 05/06/07)";
+      return null;
+    }
+
+    function getPendingDocRef() {
+        const role = sessionStorage.getItem('pendingRole');
+        const docId = sessionStorage.getItem('pendingDocId');
+        if(!role || !docId) return null;
+        const collectionName = role === 'Employee' ? 'employee_accounts' : 'retiree_widow_accounts';
+        return db.collection('compte_cwoste').doc(collectionName).collection('users').doc(docId);
+    }
+
+    function startTimer() {
+        let timeLeft = 600; 
+        const timerDisplay = document.getElementById('countdownTimer');
+        const resendBtn = document.getElementById('btnResendCode');
+        const timerContainer = document.getElementById('timerContainer');
+        
+        resendBtn.classList.remove('hidden');
+        resendBtn.disabled = true;
+        resendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        timerContainer.classList.remove('hidden');
+        
+        resendBtn.innerHTML = 'إعادة الإرسال <i class="fa-solid fa-rotate-right"></i>';
+        
+        clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+            let m = Math.floor(timeLeft / 60);
+            let s = timeLeft % 60;
+            timerDisplay.textContent = `${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                resendBtn.disabled = false;
+                resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                timerContainer.classList.add('hidden');
+                resendBtn.innerHTML = 'إرسال رمز جديد <i class="fa-solid fa-paper-plane"></i>';
+            }
+            timeLeft--;
+        }, 1000);
+    }
+
+    async function requestVerificationCode() {
+        const pendingRef = getPendingDocRef();
+        if(!pendingRef) return showToast('error', 'الجلسة مفقودة، يرجى إعادة الدخول');
+        
+        Swal.fire({ title: 'جاري الإرسال...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        try {
+            const docSnap = await pendingRef.get();
+            const data = docSnap.data();
+            const userName = data.name || (data.firstName + " " + data.lastName) || "المستخدم";
+            
+            const generatedCode = Math.floor(10000000 + Math.random() * 90000000).toString();
+            await pendingRef.update({ verificationCode: generatedCode });
+            
+            const isSent = await sendEmailViaGAS(data.email, generatedCode, userName);
+            
+            Swal.close();
+            
+            if(isSent) {
+                startTimer();
+                document.getElementById('verifyInstruction').textContent = "تم إرسال الرمز. يرجى التحقق من بريدك الإلكتروني.";
+                showToast('success', 'تم إرسال الرمز بنجاح');
+            } else {
+                Swal.fire({ icon: 'error', title: 'خطأ', text: 'تم تسجيل الرمز لكن فشل إرسال البريد الإلكتروني.', confirmButtonText: 'موافق' });
+            }
+            
+        } catch(error) {
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل العملية.', confirmButtonText: 'موافق' });
+        }
+    }
+
+    function cancelVerification() {
+        sessionStorage.removeItem('pendingRole');
+        sessionStorage.removeItem('pendingDocId');
+        clearInterval(countdownInterval);
+        switchView('unifiedLoginView'); 
+    }
+
+    async function confirmVerification() {
+        const inputCode = document.getElementById('verifyCodeInput').value;
+        if(inputCode.length !== 8) return showToast('warning', 'أدخل الرمز المكون من 8 أرقام');
+        const pendingRef = getPendingDocRef();
+        if(!pendingRef) return showToast('error', 'الجلسة مفقودة، يرجى العودة للتسجيل');
+        Swal.fire({ title: 'جاري التحقق...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const docSnap = await pendingRef.get();
+            const data = docSnap.data();
+            if (data.verificationCode === inputCode) {
+                await pendingRef.update({ isActive: true, verificationCode: firebase.firestore.FieldValue.delete() });
+                clearInterval(countdownInterval);
+                sessionStorage.removeItem('pendingRole');
+                sessionStorage.removeItem('pendingDocId');
+                Swal.fire({ icon: 'success', title: 'تم التفعيل!', text: 'حسابك جاهز الآن، يمكنك الدخول.', confirmButtonText: 'موافق' }).then(() => { switchView('unifiedLoginView'); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'رمز خاطئ', text: 'يرجى التأكد من الرمز والمحاولة مرة أخرى.', confirmButtonText: 'موافق' });
+            }
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'فشل', text: 'خطأ في الاتصال بالقاعدة.', confirmButtonText: 'موافق' });
+        }
+    }
+
+ async function processUnifiedLogin() {
+  const ccp = document.getElementById('loginCcp').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  if(!ccp || !password) return showToast('warning', 'أدخل الحساب البريدي وكلمة المرور');
+  Swal.fire({ title: 'جاري الدخول...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  try {
+    let userData = null; let userDocId = null; let roleType = "";
+
+    const empQuery = await db.collection('compte_cwoste').doc('employee_accounts').collection('users').where('ccp', '==', ccp).limit(1).get();
+    if (!empQuery.empty) {
+      userData = empQuery.docs[0].data(); userDocId = empQuery.docs[0].id; roleType = "Employee";
+    } else {
+      const retDoc = await db.collection('compte_cwoste').doc('retiree_widow_accounts').collection('users').doc(ccp).get();
+      if (retDoc.exists) {
+        userData = retDoc.data(); userDocId = retDoc.id; roleType = userData.role; 
+      }
+    }
+
+    if (!userData) throw new Error('رقم الحساب غير مسجل.');
+    if (userData.password !== password) throw new Error('كلمة المرور خاطئة.');
+
+    // --- التحقق من الحالات (معلق، مرفوض، بانتظار الإدارة) ---
+    if (userData.isActive === false || userData.accountStatus === 'suspended' || userData.accountStatus === 'pending_admin' || userData.accountStatus === 'rejected') {
+        Swal.close();
+        
+        if (userData.accountStatus === 'rejected') {
+            Swal.fire({
+                icon: 'error', title: 'تم رفض الوثائق',
+                html: `<div class="text-right"><p class="text-sm text-slate-700 font-bold mb-2">رفضت الإدارة تفعيل حسابك للسبب التالي:</p><div class="bg-red-50 text-red-700 p-3 rounded-lg text-xs font-black border border-red-200">${userData.rejectionReason || 'الوثائق غير واضحة أو غير مطابقة'}</div></div>`,
+                showCancelButton: true, confirmButtonText: 'إعادة رفع الوثائق', cancelButtonText: 'إغلاق', confirmButtonColor: '#4f46e5'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    sessionStorage.setItem('temp_upload_id', userDocId);
+                    sessionStorage.setItem('temp_upload_role', roleType);
+                    document.getElementById('workDocTitle').innerText = roleType === 'Employee' ? 'شهادة العمل الرسمية' : 'مقرر الإحالة على التقاعد';
+                    document.getElementById('documentUploadModal').classList.add('active');
+                }
+            });
+            return;
+
+        } else if (userData.accountStatus === 'pending_admin') {
+            // 🌟 الفحص الذكي: هل المستخدم قام برفع وثائق إلكترونية؟
+            const hasUploadedDocs = userData.documents && (userData.documents.idDocUrl || userData.documents.workDocUrl || userData.documents.retirementDocUrl);
+
+            if (hasUploadedDocs) {
+                // رسالة من رفع الوثائق إلكترونياً
+                return Swal.fire({
+                    icon: 'info',
+                    title: 'حساب غير مفعل بعد',
+                    html: '<div class="text-center"><p class="font-bold text-slate-700 mb-2">حسابك قيد المراجعة.</p><p class="text-sm text-slate-600 font-bold leading-relaxed">نحن في انتظار دراسة وثائق التفعيل التي قمت برفعها مسبقاً.<br> يرجى الدخول من حين لآخر لتفقد حالة الحساب.</p></div>',
+                    confirmButtonText: 'حسناً، سأنتظر',
+                    confirmButtonColor: '#0ea5e9'
+                });
+            } else {
+                // رسالة من لم يرفع الوثائق (النظام اليدوي المباشر) مخصصة حسب الفئة
+                const docList = roleType === 'Employee' ? 
+                    '<li>شهادة عمل حديثة.</li><li>صك بريدي (شيك).</li><li>بطاقة التعريف الوطنية.</li>' : 
+                    '<li>مقرر الإحالة على التقاعد (أو ما يثبت ذلك).</li><li>صك بريدي (شيك).</li><li>بطاقة التعريف الوطنية.</li>';
+                
+                return Swal.fire({
+                    icon: 'warning',
+                    title: 'حساب غير مفعل',
+                    html: `<div class="text-right"><p class="font-bold text-slate-700 leading-relaxed mb-3">حسابك مسجل ولكن لم يتم تفعيله بعد.</p><p class="text-primaryDark font-black text-sm mb-2">لتفعيل حسابك، يرجى تقديم الوثائق التالية إلى مقر اللجنة:</p><ul class="list-disc list-inside text-xs font-bold text-slate-600 space-y-1">${docList}</ul></div>`,
+                    confirmButtonText: 'فهمت',
+                    confirmButtonColor: '#f59e0b'
+                });
+            }
+
+        } else if (userData.accountStatus === 'suspended') {
+            return Swal.fire({ icon: 'error', title: 'حساب معطل', text: 'تم إيقاف هذا الحساب من قبل الإدارة. يرجى التواصل مع اللجنة.', confirmButtonText: 'موافق' });
+        } else {
+            sessionStorage.setItem('pendingRole', roleType === "Employee" ? "Employee" : "Retiree");
+            sessionStorage.setItem('pendingDocId', userDocId);
+            showVerificationView(false); 
+            return;
+        }
+    }
+
+    if (document.getElementById('loginRememberMe').checked) {
+      localStorage.setItem('cwoste_auth_token', ccp);
+      localStorage.setItem('cwoste_auth_role', roleType);
+    } else {
+      sessionStorage.setItem('cwoste_auth_token', ccp);
+      sessionStorage.setItem('cwoste_auth_role', roleType);
+    }
+
+    Swal.fire({ icon: 'success', title: 'مرحباً بك', showConfirmButton: false, timer: 1500 }).then(() => {
+      window.location.href = roleType === "Employee" ? "employee_dashboard.html" : "retiree_dashboard.html"; 
+    });
+
+  } catch (error) {
+    Swal.fire({ icon: 'error', title: 'فشل الدخول', text: error.message, confirmButtonText: 'موافق' });
+  }
+}
+
+
+
+    async function fetchEmployeeData() {
+      const empId = document.getElementById('setupEmpId').value.trim();
+      if(empId.length !== 16) return showToast('warning', 'الرجاء إدخال 16 رقمًا');
+      Swal.fire({ title: 'جاري المطابقة...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+      try {
+        const usersRef = db.collection('compte_cwoste').doc('employee_accounts').collection('users');
+        const existingUser = await usersRef.doc(empId).get();
+        if (existingUser.exists) {
+          Swal.fire({ icon: 'info', title: 'حساب موجود', text: 'الرقم مسجل مسبقاً.', confirmButtonText: 'موافق' }).then(() => switchView('unifiedLoginView'));
+          return;
+        }
+
+        let employeeData = null;
+        let docSnap = await db.collection("employeescomplus").doc(empId).get();
+        if (docSnap.exists) employeeData = docSnap.data();
+        else {
+          const querySnap = await db.collection("employeescomplus").where("empId", "==", empId).limit(1).get();
+          if (!querySnap.empty) employeeData = querySnap.docs[0].data();
+        }
+
+        if (!employeeData) {
+          Swal.fire({ icon: 'error', title: 'غير موجود', text: 'رقم التعريف غير مسجل بالوزارة.', confirmButtonText: 'موافق' });
+          return;
+        }
+
+        Swal.close();
+        document.getElementById('empActivationStep1').classList.add('hidden');
+        document.getElementById('empActivationStep2').classList.remove('hidden');
+        
+        document.getElementById('regEmpIdLocked').value = empId;
+        document.getElementById('regEmpName').value = employeeData.name || 'غير متوفر';
+        document.getElementById('regEmpRank').value = employeeData.grade || 'غير متوفر';
+        document.getElementById('regEmpWorkplace').value = employeeData.place || 'غير متوفر';
+        document.getElementById('regEmpBirth').value = formatFirebaseDate(employeeData.diz);
+        document.getElementById('regEmpEmploymentDate').value = formatFirebaseDate(employeeData.dtw);
+        
+        const ninField = document.getElementById('regEmpNIN');
+        if(employeeData.nin && employeeData.nin.trim() !== '') {
+            ninField.value = employeeData.nin;
+            ninField.setAttribute('readonly', 'true');
+            ninField.classList.add('!bg-slate-100', 'cursor-not-allowed', '!text-slate-500');
+        } else {
+            ninField.value = '';
+            ninField.removeAttribute('readonly');
+            ninField.classList.remove('!bg-slate-100', 'cursor-not-allowed', '!text-slate-500');
+        }
+
+      } catch (e) {
+        Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل الاتصال: ' + e.message, confirmButtonText: 'موافق' });
+      }
+    }
+
+    async function verifySpouse(type, prefix) {
+        const nameField = document.getElementById(prefix + 'SpouseName');
+        let inputVal = '';
+        
+        if (type === 'employee') {
+            inputVal = document.getElementById(prefix + 'SpouseEmpId').value.trim();
+            if(!inputVal) return Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الرجاء إدخال الرقم الوظيفي للزوج(ة) أولاً.', confirmButtonText: 'موافق' });
+            if(inputVal.length !== 16) return Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الرقم الوظيفي يجب أن يتكون من 16 رقماً.', confirmButtonText: 'موافق' });
+        } else {
+            inputVal = document.getElementById(prefix + 'SpouseCcp').value.trim();
+            if(!inputVal) return Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'الرجاء إدخال الحساب البريدي للزوج(ة) أولاً.', confirmButtonText: 'موافق' });
+        }
+
+        Swal.fire({ title: 'جاري التحقق...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        
+        try {
+            let spData = null;
+            if (type === 'employee') {
+                let spDoc = await db.collection("employeescomplus").doc(inputVal).get();
+                if(spDoc.exists) spData = spDoc.data();
+                else {
+                    let spQuery = await db.collection("employeescomplus").where("empId", "==", inputVal).limit(1).get();
+                    if(!spQuery.empty) spData = spQuery.docs[0].data();
+                }
+                if(!spData) throw new Error('الرقم الوظيفي للزوج(ة) غير موجود بالوزارة.');
+                nameField.value = spData.name;
+            } else if (type === 'retiree') {
+                let spDoc = await db.collection('compte_cwoste').doc('retiree_widow_accounts').collection('users').doc(inputVal).get();
+                if(!spDoc.exists) throw new Error('لم يتم العثور على حساب مسجل للمتقاعد(ة) بهذا الـ CCP.');
+                let data = spDoc.data();
+                nameField.value = (data.firstName + " " + data.lastName).trim();
+            }
+            
+            nameField.classList.replace('!bg-white/50', '!bg-green-100');
+            nameField.classList.replace('!text-slate-500', '!text-green-800');
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'تم التحقق بنجاح',
+                text: 'تم العثور على بيانات الزوج(ة): ' + nameField.value,
+                confirmButtonText: 'موافق',
+                confirmButtonColor: '#10b981'
+            });
+
+        } catch(e) {
+            nameField.value = '';
+            nameField.classList.replace('!bg-green-100', '!bg-white/50');
+            nameField.classList.replace('!text-green-800', '!text-slate-500');
+            Swal.fire({ icon: 'error', title: 'فشل التحقق', text: e.message, confirmButtonText: 'موافق' });
+        }
+    }
+
+  async function submitEmployeeRegistration() {
+  const empId = document.getElementById('regEmpIdLocked').value;
+  const ccp = document.getElementById('regEmpCcp').value.trim();
+  const key = document.getElementById('regEmpKey').value.trim();
+  const nin = document.getElementById('regEmpNIN').value.trim(); 
+  
+  const workDistrict = document.getElementById('regEmpWorkDistrict').value;
+  const workMunicipality = document.getElementById('regEmpWorkMunicipality').value;
+  const residenceDistrict = document.getElementById('regEmpResDistrict').value;
+  const residenceMunicipality = document.getElementById('regEmpResMunicipality').value;
+  
+  const familyStatus = document.getElementById('regEmpFamilyStatus').value;
+  const childrenCount = document.getElementById('regEmpChildrenCount').value.trim();
+  const sponsorship = document.getElementById('regEmpSponsorship').value;
+  const sponsoredCount = document.getElementById('regEmpSponsoredCount').value.trim();
+  
+  const dualSector = document.getElementById('regEmpDualSector').value;
+  const spouseStatus = document.getElementById('regEmpSpouseStatus').value;
+  const spouseName = document.getElementById('regEmpSpouseName').value.trim();
+  const spouseEmpId = document.getElementById('regEmpSpouseEmpId').value.trim();
+  const spouseCcp = document.getElementById('regEmpSpouseCcp').value.trim();
+
+  const email = document.getElementById('regEmpEmail').value.trim();
+  const rawPhone = document.getElementById('regEmpPhone').value;
+  const pwd = document.getElementById('regEmpPwd').value;
+  const pwdConfirm = document.getElementById('regEmpPwdConfirm').value;
+
+  const cleanedPhone = cleanPhone(rawPhone);
+
+  let isValid = true;
+  let errorMsg = '';
+
+  if(!nin || nin.length !== 18) { isValid = false; errorMsg = 'الرجاء إدخال رقم التعريف الوطني صحيح (18 رقم).'; }
+  else if(!ccp || ccp.length !== 10 || !key) { isValid = false; errorMsg = 'الرجاء إدخال الحساب البريدي المكون من 10 أرقام بالضبط مع المفتاح.'; }
+  else if(!workDistrict || !workMunicipality || !residenceDistrict || !residenceMunicipality) { isValid = false; errorMsg = 'الرجاء اختيار دوائر وبلديات العمل والإقامة.'; }
+  else if(!cleanedPhone || cleanedPhone.length !== 10) { isValid = false; errorMsg = 'رقم الهاتف غير صالح.'; }
+  else if(!email || validateEmailPhone(email, rawPhone)) { isValid = false; errorMsg = validateEmailPhone(email, rawPhone) || 'البريد الإلكتروني مطلوب.'; }
+  else if(!familyStatus) { isValid = false; errorMsg = 'الرجاء اختيار الحالة العائلية.'; }
+  else if(familyStatus !== 'أعزب(ة)' && childrenCount === '') { isValid = false; errorMsg = 'الرجاء إدخال عدد الأولاد.'; }
+  else if(sponsorship === 'نعم' && (!sponsoredCount || parseInt(sponsoredCount) < 1)) { isValid = false; errorMsg = 'الرجاء إدخال عدد الأفراد المكفولين.'; }
+  else if(dualSector === 'نعم' && !spouseName) { isValid = false; errorMsg = 'الرجاء التحقق من بيانات الزوج(ة) بنجاح قبل المتابعة.'; }
+  else if(!pwd || pwd !== pwdConfirm) { isValid = false; errorMsg = 'يرجى إدخال كلمة المرور والتأكد من تطابقها.'; }
+
+  if(!isValid) return Swal.fire({ icon: 'warning', title: 'تنبيه', text: errorMsg, confirmButtonText: 'موافق' });
+
+  Swal.fire({ title: 'جاري التسجيل...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  try {
+    const empRef = db.collection('compte_cwoste').doc('employee_accounts').collection('users');
+    const retRef = db.collection('compte_cwoste').doc('retiree_widow_accounts').collection('users');
+    
+    const qEmpCcp = await empRef.where('ccp', '==', ccp).get();
+    const retDocCcp = await retRef.doc(ccp).get();
+    if (!qEmpCcp.empty || retDocCcp.exists) throw new Error('رقم CCP مستخدم مسبقاً.');
+
+    const qEmpNIN = await empRef.where('nin', '==', nin).get();
+    const qRetNIN = await retRef.where('nin', '==', nin).get();
+    if (!qEmpNIN.empty || !qRetNIN.empty) throw new Error('رقم التعريف الوطني (NIN) مستخدم مسبقاً في حساب آخر.');
+
+    const qEmpEmail = await empRef.where('email', '==', email).get();
+    const qRetEmail = await retRef.where('email', '==', email).get();
+    if (!qEmpEmail.empty || !qRetEmail.empty) throw new Error('البريد الإلكتروني مستخدم مسبقاً.');
+
+    const qEmpPhone = await empRef.where('phone', '==', cleanedPhone).get();
+    const qRetPhone = await retRef.where('phone', '==', cleanedPhone).get();
+    if (!qEmpPhone.empty || !qRetPhone.empty) throw new Error('رقم الهاتف مستخدم مسبقاً.');
+
+    // 🌟 قراءة إعدادات نظام التفعيل ورفع الوثائق من لوحة الإدارة 🌟
+    const settingsSnap = await db.collection('compte_cwoste').doc('system_config').get();
+    let activationMode = 'email'; 
+    let requiresUpload = false;
+    
+    if(settingsSnap.exists) {
+        activationMode = settingsSnap.data().emp_mode || 'email';
+        requiresUpload = settingsSnap.data().emp_upload || false;
+    }
+
+    let isAccountActive = false;
+    let accountStatus = '';
+    let generatedCode = null;
+
+    if (activationMode === 'auto') {
+        isAccountActive = true; accountStatus = 'active';
+    } else if (activationMode === 'admin') {
+        isAccountActive = false; accountStatus = 'pending_admin';
+    } else {
+        isAccountActive = false; accountStatus = 'pending_email';
+        generatedCode = Math.floor(10000000 + Math.random() * 90000000).toString();
+    }
+
+    const empName = document.getElementById('regEmpName').value;
+    
+    const employeeRecord = {
+      empId: empId, name: empName, grade: document.getElementById('regEmpRank').value,
+      workplace: document.getElementById('regEmpWorkplace').value, birthDate: document.getElementById('regEmpBirth').value,
+      employmentDate: document.getElementById('regEmpEmploymentDate').value, nin: nin, workDistrict: workDistrict,
+      workMunicipality: workMunicipality, residenceDistrict: residenceDistrict, residenceMunicipality: residenceMunicipality,
+      familyStatus: familyStatus, childrenCount: familyStatus === 'أعزب(ة)' ? 0 : parseInt(childrenCount),
+      sponsorship: sponsorship, sponsoredCount: sponsorship === 'نعم' ? parseInt(sponsoredCount) : 0,
+      dualSector: dualSector, ccp: ccp, ccpKey: key, email: email, phone: cleanedPhone, password: pwd, 
+      role: "Employee", isActive: isAccountActive, accountStatus: accountStatus, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if(generatedCode) employeeRecord.verificationCode = generatedCode;
+    if (dualSector === 'نعم') {
+        employeeRecord.spouseStatus = spouseStatus;
+        employeeRecord.spouseName = spouseName;
+        employeeRecord.spouseIdOrCcp = spouseStatus === 'موظف(ة)' ? spouseEmpId : spouseCcp;
+    }
+
+    // تسجيل البيانات في القاعدة
+    await empRef.doc(empId).set(employeeRecord);
+    Swal.close();
+
+   // اتخاذ الإجراء بناءً على نوع التفعيل
+    if (activationMode === 'admin') {
+        if (requiresUpload) {
+            sessionStorage.setItem('temp_upload_id', empId);
+            sessionStorage.setItem('temp_upload_role', 'Employee');
+            document.getElementById('workDocTitle').innerText = 'شهادة العمل الرسمية';
+            document.getElementById('documentUploadModal').classList.add('active');
+        } else {
+            // 🌟 رسالة مخصصة للموظفين عند تعطيل الرفع الإلكتروني 🌟
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'تم التسجيل بنجاح', 
+                html: '<div class="text-right"><p class="font-bold text-slate-700 leading-relaxed mb-3">حسابك مسجل بنجاح، لكنه معلق مؤقتاً.</p><p class="text-primaryDark font-black text-sm mb-2">لتفعيل حسابك، يرجى تقديم الوثائق التالية إلى مقر اللجنة:</p><ul class="list-disc list-inside text-xs font-bold text-slate-600 space-y-1"><li>شهادة عمل حديثة.</li><li>نسخة من صك بريدي (شيك).</li><li>نسخة من بطاقة التعريف الوطنية.</li></ul></div>', 
+                confirmButtonText: 'العودة للرئيسية',
+                confirmButtonColor: '#1976d2'
+            }).then(() => switchView('unifiedLoginView'));
+        }
+    } else if (activationMode === 'email') {
+        await sendEmailViaGAS(email, generatedCode, empName);
+        sessionStorage.setItem('pendingRole', "Employee");
+        sessionStorage.setItem('pendingDocId', empId);
+        showVerificationView(true);
+    } else {
+        Swal.fire({ icon: 'success', title: 'تم التفعيل!', text: 'تم إنشاء الحساب وتفعيله بنجاح. يمكنك تسجيل الدخول الآن.', confirmButtonText: 'الدخول للمنصة' })
+        .then(() => switchView('unifiedLoginView'));
+    }
+
+  } catch (error) {
+    Swal.fire({ icon: 'error', title: 'فشل التسجيل', text: error.message, confirmButtonText: 'موافق' });
+  }
+}
+    async function verifyRetireeCcp() {
+      const ccp = document.getElementById('setupRetCcp').value.trim();
+      const key = document.getElementById('setupRetKey').value.trim();
+      if(!ccp || ccp.length !== 10 || !key) return Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'أدخل الحساب البريدي (10 أرقام) والمفتاح', confirmButtonText: 'موافق' });
+
+      Swal.fire({ title: 'جاري التحقق...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+      try {
+        const retRef = db.collection('compte_cwoste').doc('retiree_widow_accounts').collection('users');
+        const empRef = db.collection('compte_cwoste').doc('employee_accounts').collection('users');
+        
+        const docSnap = await retRef.doc(ccp).get();
+        if (docSnap.exists) {
+          Swal.fire({ icon: 'info', title: 'حساب موجود', text: 'مسجل مسبقاً.', confirmButtonText: 'موافق' }).then(() => switchView('unifiedLoginView'));
+          return;
+        }
+
+        const qEmpCcp = await empRef.where('ccp', '==', ccp).get();
+        if (!qEmpCcp.empty) {
+          Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'هذا الحساب لموظف عامل.', confirmButtonText: 'موافق' }).then(() => switchView('unifiedLoginView'));
+          return;
+        }
+
+        Swal.close();
+        document.getElementById('retActivationStep1').classList.add('hidden');
+        document.getElementById('retActivationStep2').classList.remove('hidden');
+        
+        document.getElementById('regRetCcpLocked').value = ccp;
+        document.getElementById('regRetKeyLocked').value = key;
+        
+        const badgeCcp = document.getElementById('regRetCcpBadge');
+        if(badgeCcp) badgeCcp.value = ccp;
+        
+        const badgeKey = document.getElementById('regRetKeyBadge');
+        if(badgeKey) badgeKey.value = key;
+      } catch (e) {
+        Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل الاتصال: ' + e.message, confirmButtonText: 'موافق' });
+      }
+    }
+
+async function submitRetireeRegistration() {
+  const fname = document.getElementById('regRetFirstName').value.trim();
+  const lname = document.getElementById('regRetLastName').value.trim();
+
+  let bDayVal = document.getElementById('regRetBirthDay').value.trim();
+  let bMonthVal = document.getElementById('regRetBirthMonth').value.trim();
+  let bYearVal = document.getElementById('regRetBirthYear').value.trim();
+  let bDay = bDayVal ? bDayVal.padStart(2, '0') : "";
+  let bMonth = bMonthVal ? bMonthVal.padStart(2, '0') : "";
+  let bYear = bYearVal ? bYearVal : "";
+  const birthDate = (bDay && bMonth && bYear) ? `${bDay}-${bMonth}-${bYear}` : "";
+
+  const ccp = document.getElementById('regRetCcpLocked').value;
+  const key = document.getElementById('regRetKeyLocked').value;
+  const status = document.getElementById('regRetStatus').value;
+  const nin = document.getElementById('regRetNIN').value.trim();
+  
+  const residenceDistrict = document.getElementById('regRetResDistrict').value;
+  const residenceMunicipality = document.getElementById('regRetResMunicipality').value;
+  const familyStatus = document.getElementById('regRetFamilyStatus').value;
+  const childrenCount = document.getElementById('regRetChildrenCount').value.trim();
+  const sponsorship = document.getElementById('regRetSponsorship').value;
+  const sponsoredCount = document.getElementById('regRetSponsoredCount').value.trim();
+  
+  const dualSector = document.getElementById('regRetDualSector').value;
+  const spouseStatus = document.getElementById('regRetSpouseStatus').value;
+  const spouseName = document.getElementById('regRetSpouseName').value.trim();
+  const spouseEmpId = document.getElementById('regRetSpouseEmpId').value.trim();
+  const spouseCcp = document.getElementById('regRetSpouseCcp').value.trim();
+
+  const email = document.getElementById('regRetEmail').value.trim();
+  const rawPhone = document.getElementById('regRetPhone').value;
+  const pwd = document.getElementById('regRetPwd').value;
+  const pwdConfirm = document.getElementById('regRetPwdConfirm').value;
+
+  const cleanedPhone = cleanPhone(rawPhone);
+
+  let isValid = true;
+  let errorMsg = '';
+
+  if(!fname || !lname) { isValid = false; errorMsg = 'الرجاء إدخال الاسم واللقب.'; }
+  else if(!birthDate || birthDate.length !== 10) { isValid = false; errorMsg = 'الرجاء إدخال تاريخ الميلاد كاملاً وبشكل صحيح.'; }
+  else if(!nin || nin.length !== 18) { isValid = false; errorMsg = 'الرجاء إدخال رقم التعريف الوطني صحيح (18 رقم).'; }
+  else if(!residenceDistrict || !residenceMunicipality) { isValid = false; errorMsg = 'الرجاء اختيار دائرة وبلدية الإقامة.'; }
+  else if(!cleanedPhone || cleanedPhone.length !== 10) { isValid = false; errorMsg = 'رقم الهاتف غير صالح.'; }
+  else if(!email || validateEmailPhone(email, rawPhone)) { isValid = false; errorMsg = validateEmailPhone(email, rawPhone) || 'البريد الإلكتروني مطلوب.'; }
+  else if(!familyStatus) { isValid = false; errorMsg = 'الرجاء اختيار الحالة العائلية.'; }
+  else if(familyStatus !== 'أعزب(ة)' && childrenCount === '') { isValid = false; errorMsg = 'الرجاء إدخال عدد الأولاد.'; }
+  else if(sponsorship === 'نعم' && (!sponsoredCount || parseInt(sponsoredCount) < 1)) { isValid = false; errorMsg = 'الرجاء إدخال عدد الأفراد المكفولين.'; }
+  else if(dualSector === 'نعم' && !spouseName) { isValid = false; errorMsg = 'الرجاء التحقق من بيانات الزوج(ة) بنجاح قبل المتابعة.'; }
+  else if(!pwd || pwd !== pwdConfirm) { isValid = false; errorMsg = 'يرجى إدخال كلمة المرور والتأكد من تطابقها.'; }
+
+  if(!isValid) return Swal.fire({ icon: 'warning', title: 'تنبيه', text: errorMsg, confirmButtonText: 'موافق' });
+
+  Swal.fire({ title: 'جاري التسجيل...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  try {
+    const empRef = db.collection('compte_cwoste').doc('employee_accounts').collection('users');
+    const retRef = db.collection('compte_cwoste').doc('retiree_widow_accounts').collection('users');
+    
+    // التحقق من التكرار
+    const qEmpCcp = await empRef.where('ccp', '==', ccp).get();
+    const retDocCcp = await retRef.doc(ccp).get();
+    if (!qEmpCcp.empty || retDocCcp.exists) throw new Error('CCP مستخدم مسبقاً.');
+
+    const qEmpNIN = await empRef.where('nin', '==', nin).get();
+    const qRetNIN = await retRef.where('nin', '==', nin).get();
+    if (!qEmpNIN.empty || !qRetNIN.empty) throw new Error('رقم التعريف الوطني (NIN) مستخدم مسبقاً في حساب آخر.');
+
+    const qEmpEmail = await empRef.where('email', '==', email).get();
+    const qRetEmail = await retRef.where('email', '==', email).get();
+    if (!qEmpEmail.empty || !qRetEmail.empty) throw new Error('الإيميل مستخدم مسبقاً.');
+
+    const qEmpPhone = await empRef.where('phone', '==', cleanedPhone).get();
+    const qRetPhone = await retRef.where('phone', '==', cleanedPhone).get();
+    if (!qEmpPhone.empty || !qRetPhone.empty) throw new Error('الهاتف مستخدم مسبقاً.');
+
+    // 🌟 قراءة إعدادات التفعيل من لوحة الإدارة 🌟
+    const settingsSnap = await db.collection('compte_cwoste').doc('system_config').get();
+    let activationMode = 'email'; 
+    let requiresUpload = false;
+    
+    if(settingsSnap.exists) {
+        activationMode = settingsSnap.data().ret_mode || 'email';
+        requiresUpload = settingsSnap.data().ret_upload || false;
+    }
+
+    let isAccountActive = false;
+    let accountStatus = '';
+    let generatedCode = null;
+
+    if (activationMode === 'auto') {
+        isAccountActive = true; accountStatus = 'active';
+    } else if (activationMode === 'admin') {
+        isAccountActive = false; accountStatus = 'pending_admin';
+    } else {
+        isAccountActive = false; accountStatus = 'pending_email';
+        generatedCode = Math.floor(10000000 + Math.random() * 90000000).toString();
+    }
+
+    const fullName = fname + " " + lname;
+
+    const retireeRecord = {
+      firstName: fname, lastName: lname, birthDate: birthDate, ccp: ccp, ccpKey: key, status: status, nin: nin,
+      residenceDistrict: residenceDistrict, residenceMunicipality: residenceMunicipality,
+      familyStatus: familyStatus, childrenCount: familyStatus === 'أعزب(ة)' ? 0 : parseInt(childrenCount),
+      sponsorship: sponsorship, sponsoredCount: sponsorship === 'نعم' ? parseInt(sponsoredCount) : 0,
+      dualSector: dualSector, phone: cleanedPhone, email: email, password: pwd, 
+      role: status === "متقاعد(ة)" ? "Retiree" : "Widow", isActive: isAccountActive,
+      accountStatus: accountStatus, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    if(generatedCode) retireeRecord.verificationCode = generatedCode;
+    if (dualSector === 'نعم') {
+        retireeRecord.spouseStatus = spouseStatus;
+        retireeRecord.spouseName = spouseName;
+        retireeRecord.spouseIdOrCcp = spouseStatus === 'موظف(ة)' ? spouseEmpId : spouseCcp;
+    }
+
+    // تسجيل البيانات في القاعدة
+    await retRef.doc(ccp).set(retireeRecord);
+    Swal.close();
+
+   // اتخاذ الإجراء بناءً على نوع التفعيل
+    if (activationMode === 'admin') {
+        if (requiresUpload) {
+            sessionStorage.setItem('temp_upload_id', ccp);
+            sessionStorage.setItem('temp_upload_role', 'Retiree');
+            document.getElementById('workDocTitle').innerText = 'مقرر الإحالة على التقاعد';
+            document.getElementById('documentUploadModal').classList.add('active');
+        } else {
+            // 🌟 رسالة مخصصة للمتقاعدين/الأرامل عند تعطيل الرفع الإلكتروني 🌟
+            Swal.fire({ 
+                icon: 'success', 
+                title: 'تم التسجيل بنجاح', 
+                html: '<div class="text-right"><p class="font-bold text-slate-700 leading-relaxed mb-3">حسابك مسجل بنجاح، لكنه معلق مؤقتاً.</p><p class="text-primaryDark font-black text-sm mb-2">لتفعيل حسابك، يرجى تقديم الوثائق التالية إلى مقر اللجنة:</p><ul class="list-disc list-inside text-xs font-bold text-slate-600 space-y-1"><li>مقرر الإحالة على التقاعد (أو ما يثبت ذلك).</li><li>صك بريدي (شيك).</li><li>بطاقة التعريف الوطنية.</li></ul></div>', 
+                confirmButtonText: 'العودة للرئيسية',
+                confirmButtonColor: '#1976d2'
+            }).then(() => switchView('unifiedLoginView'));
+        }
+    } else if (activationMode === 'email') {
+        await sendEmailViaGAS(email, generatedCode, fullName);
+        sessionStorage.setItem('pendingRole', "Retiree");
+        sessionStorage.setItem('pendingDocId', ccp);
+        showVerificationView(true);
+    } else {
+        Swal.fire({ icon: 'success', title: 'تم التفعيل!', text: 'تم إنشاء الحساب وتفعيله بنجاح. يمكنك تسجيل الدخول الآن.', confirmButtonText: 'الدخول للمنصة' })
+        .then(() => switchView('unifiedLoginView'));
+    }
+
+  } catch (error) {
+    Swal.fire({ icon: 'error', title: 'فشل التسجيل', text: error.message, confirmButtonText: 'موافق' });
+  }
+}
+
+// ⚠️ ضع رابط الـ Web App URL الخاص بجوجل سكريبت درايف هنا
+    const GOOGLE_SCRIPT_UPLOAD_URL = "https://script.google.com/macros/s/AKfycbwSoFKe8cKf_FxnONNBGpRCFrhUzMPXQkN8a8SQB5OZreMNDHD2JYmW7A3fOx7F3cxLgw/exec";
+
+    let uploadedDocs = { 'workDoc': null, 'ccpDoc': null, 'idDoc': null };
+
+    // 🌟 ضغط الصورة عبر Canvas وتحديث الزر والواجهة 🌟
+    function compressAndSelectFile(input, docType) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+
+        // إظهار حالة (جاري المعالجة) للأيقونة لتنبيه المستخدم
+        const row = document.getElementById(`row-${docType}`);
+        const iconBox = row.querySelector('.doc-icon');
+        const originalIcon = iconBox.innerHTML;
+        iconBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-500"></i>';
+
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1000;
+                let width = img.width; let height = img.height;
+
+                if (width > MAX_WIDTH) { height = Math.round((height * MAX_WIDTH) / width); width = MAX_WIDTH; }
+                canvas.width = width; canvas.height = height;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // ضغط الصورة
+                const compressedBase64 = canvas.toDataURL("image/jpeg", 0.6).split(',')[1];
+                uploadedDocs[docType] = { base64: compressedBase64, docType: docType };
+
+                // تحديث الواجهة بنجاح
+                row.classList.add('uploaded');
+                iconBox.innerHTML = originalIcon; // إرجاع الأيقونة الأصلية
+                row.querySelector('.doc-status i').classList.remove('opacity-0');
+
+                // فحص هل تم اختيار كل الصور لفتح الزر؟
+                const allDone = Object.values(uploadedDocs).every(v => v !== null);
+                const btn = document.getElementById('btnSubmitDocuments');
+                if (allDone) {
+                    btn.disabled = false;
+                    btn.innerHTML = 'رفع الوثائق والتفعيل الآن <i class="fa-solid fa-cloud-arrow-up"></i>';
+                }
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 🌟 إرسال الصور للفايربيز وجوجل درايف 🌟
+    async function submitUploadedDocuments() {
+        const identifier = sessionStorage.getItem('temp_upload_id');
+        const role = sessionStorage.getItem('temp_upload_role');
+        if(!identifier || !role) return;
+
+        const btn = document.getElementById('btnSubmitDocuments');
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الرفع...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_UPLOAD_URL, {
+                method: 'POST',
+                body: JSON.stringify({ identifier: identifier, role: role, files: Object.values(uploadedDocs) })
+            });
+            const result = await response.json();
+
+            if (result.result === 'success') {
+                const ref = role === 'Employee' ? db.collection('compte_cwoste').doc('employee_accounts').collection('users') : db.collection('compte_cwoste').doc('retiree_widow_accounts').collection('users');
+
+                // تحديث الحساب ليصبح قيد المراجعة وإرفاق الروابط
+                await ref.doc(identifier).update({
+                    accountStatus: 'pending_admin',
+                    rejectionReason: firebase.firestore.FieldValue.delete(),
+                    documents: {
+                        workDocUrl: result.urls['workDoc'] || null,
+                        retirementDocUrl: result.urls['workDoc'] || null,
+                        ccpDocUrl: result.urls['ccpDoc'] || null,
+                        idDocUrl: result.urls['idDoc'] || null,
+                    }
+                });
+
+                document.getElementById('documentUploadModal').classList.remove('active');
+                Swal.fire({ icon: 'success', title: 'تم استلام وثائقك', text: 'تم إرسال الوثائق بنجاح. سيتم تفعيل حسابك فور مراجعتها من الإدارة.', confirmButtonText: 'العودة' }).then(() => switchView('unifiedLoginView'));
+
+                // تصفير البيانات للعملية القادمة
+                uploadedDocs = { 'workDoc': null, 'ccpDoc': null, 'idDoc': null };
+                document.querySelectorAll('.doc-row').forEach(row => { row.classList.remove('uploaded'); row.querySelector('.doc-status i').classList.add('opacity-0'); });
+                btn.innerHTML = 'يرجى تحديد جميع الصور للبدء';
+
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (e) {
+            Swal.fire('خطأ', 'فشل الرفع، يرجى المحاولة لاحقاً', 'error');
+            btn.innerHTML = 'إعادة المحاولة <i class="fa-solid fa-rotate-right"></i>';
+            btn.disabled = false;
+        }
+    }
+
+
+  </script>
+
+</body>
+</html>

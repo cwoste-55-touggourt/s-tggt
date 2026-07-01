@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>البث الحي للقرعة المباشرة</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+
+
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --primary: #1976d2; --primary-dark: #0d47a1; --primary-light: #e3f2fd;
+      --danger: #d32f2f; --warning: #fb8c00; --success: #10b981;
+      --bg-gradient: linear-gradient(135deg, #f0f4f8 0%, #e0f7fa 100%);
+      --surface: rgba(255, 255, 255, 0.95);
+    }
+    body { font-family: 'Cairo', sans-serif; background: var(--bg-gradient); margin: 0; color: #1e293b; overflow-x: hidden; }
+    body::before { content: ""; position: fixed; inset: 0; background: url('https://www.transparenttextures.com/patterns/symphony.png'); opacity: 0.05; z-index: -1; }
+
+    /* Header */
+    .header { background: linear-gradient(135deg, var(--primary-dark), var(--primary)); color: white; padding: 20px; text-align: center; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; position: relative; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    .header h2 { margin: 0; font-size: 24px; font-weight: 900; }
+    .btn-back { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); color: white; padding: 8px 15px; border-radius: 12px; text-decoration: none; font-weight: 700; backdrop-filter: blur(5px); }
+    
+    /* Layout */
+    .main-grid { display: flex; flex-wrap: wrap; gap: 20px; max-width: 1400px; margin: 0 auto; padding: 0 15px 40px; }
+    .side-panel { flex: 1; min-width: 280px; background: var(--surface); border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.8); }
+    .center-panel { flex: 2; min-width: 320px; }
+
+    .panel-title { font-size: 18px; font-weight: 900; color: var(--primary-dark); margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 2px dashed #cbd5e1; }
+
+    /* Video Player & Fullscreen */
+    .video-container { background: #000; border-radius: 20px; overflow: hidden; position: relative; box-shadow: 0 15px 35px rgba(0,0,0,0.2); border: 3px solid #e2e8f0; transition: 0.3s; }
+    .video-container.live { border-color: var(--danger); }
+    .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; width: 100%; } 
+    .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;}
+    
+    /* 🔴 اللوحة الزجاجية لمنع النقر على الفيديو 🔴 */
+    .video-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; z-index: 10; display: none; }
+
+    /* زر ملء الشاشة (فوق اللوحة الزجاجية z-index: 20) */
+    .fullscreen-btn { position: absolute; top: 15px; left: 15px; z-index: 20; background: rgba(0,0,0,0.6); color: white; border: 1px solid rgba(255,255,255,0.3); width: 45px; height: 45px; border-radius: 12px; font-size: 18px; cursor: pointer; backdrop-filter: blur(5px); transition: 0.3s; }
+    .fullscreen-btn:hover { background: var(--primary); transform: scale(1.1); }
+
+    /* Results List */
+    .results-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; scroll-behavior: smooth; }
+    .results-list::-webkit-scrollbar { width: 6px; }
+    .results-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .result-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; animation: slideInLeft 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .result-item.win { border-right: 5px solid var(--success); }
+    .result-item.wait { border-right: 5px solid var(--warning); }
+    .result-icon { width: 35px; height: 35px; border-radius: 50%; color: white; display: grid; place-items: center; flex-shrink: 0; font-size: 14px; }
+    .win .result-icon { background: var(--success); } .wait .result-icon { background: var(--warning); }
+    .result-name { font-size: 15px; font-weight: 800; display: block; }
+    
+    /* Interactive Winner Animation (Popup) */
+    .winner-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: 0.4s; backdrop-filter: blur(8px); }
+    .winner-overlay.active { opacity: 1; pointer-events: auto; }
+    .winner-card { background: linear-gradient(135deg, #ffffff, #f0fdf4); padding: 40px; border-radius: 30px; text-align: center; transform: scale(0.5) translateY(100px); transition: 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 30px 60px rgba(0,0,0,0.3); border: 5px solid var(--success); min-width: 300px; }
+    .winner-overlay.active .winner-card { transform: scale(1) translateY(0); }
+    .winner-card h3 { color: var(--success); margin: 0 0 10px; font-size: 24px; font-weight: 900; }
+    .winner-card h1 { color: var(--primary-dark); margin: 0 0 15px; font-size: 35px; font-weight: 900; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .winner-card p { background: var(--primary-light); color: var(--primary-dark); display: inline-block; padding: 8px 20px; border-radius: 50px; font-weight: 700; margin: 0; }
+    .fireworks { font-size: 50px; margin-bottom: -15px; animation: bounce 1s infinite; }
+
+    /* الشارة */
+    .status-badge { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 12px; border-radius: 14px; font-weight: 800; font-size: 16px; transition: 0.4s; margin-top: 15px; box-sizing: border-box; }
+    .status-offline { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+    .status-live { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; animation: pulseRed 2s infinite; }
+
+    .placeholder-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #cbd5e1; width: 100%; text-align: center; z-index: 1; pointer-events: none; }
+    .placeholder-content i { font-size: 60px; margin-bottom: 15px; opacity: 0.5; color: var(--primary-light); }
+    .placeholder-content h3 { margin: 0; font-size: 20px; font-weight: 800; }
+
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-50px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+    @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(220, 38, 38, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); } }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .main-grid { flex-direction: column; }
+      .center-panel { order: -1; } 
+      .header h2 { font-size: 18px; }
+      .winner-card h1 { font-size: 26px; }
+      .btn-back { padding: 6px 12px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="winner-overlay" id="winnerOverlay">
+    <div class="winner-card" id="winnerCard">
+      <div class="fireworks">🎉</div>
+      <h3 id="popupStatus">مستفيد جديد!</h3>
+      <h1 id="popupName">---</h1>
+      <p id="popupInfo">الوجهة: --- | الفوج: ---</p>
+    </div>
+  </div>
+
+ <div class="header">
+    <a href="#" id="dynamicBackBtn" class="btn-back"><i class="fa-solid fa-arrow-right"></i> الرئيسية</a>
+    <h2><i class="fa-solid fa-satellite-dish"></i> شاشة القرعة المباشرة - <span id="lotteryTitleType" style="color: #fb8c00;">جاري التحميل...</span></h2>
+  </div>
+
+  <div class="main-grid">
+    
+    <div class="side-panel">
+      <h3 class="panel-title"><i class="fa-solid fa-circle-info"></i> تفاصيل السحب</h3>
+      
+      <div style="background: #f8fafc; padding: 15px; border-radius: 14px; margin-bottom: 15px; border: 1px solid #e2e8f0; text-align: center;">
+        <span style="font-size: 13px; color: #64748b; font-weight: 700; display: block;">الفئة</span>
+        <span style="font-size: 18px; font-weight: 900; color: var(--primary);" id="infoActivity">---</span>
+      </div>
+      <div style="background: #f8fafc; padding: 15px; border-radius: 14px; margin-bottom: 15px; border: 1px solid #e2e8f0; text-align: center;">
+        <span style="font-size: 13px; color: #64748b; font-weight: 700; display: block;">الوجهة التفصيلية</span>
+        <span style="font-size: 18px; font-weight: 900; color: var(--primary);" id="infoDestination">---</span>
+      </div>
+      <div style="background: #f8fafc; padding: 15px; border-radius: 14px; border: 1px solid #e2e8f0; text-align: center;">
+        <span style="font-size: 13px; color: #64748b; font-weight: 700; display: block;">الفوج / التاريخ</span>
+        <span style="font-size: 18px; font-weight: 900; color: var(--primary);" id="infoCohort">---</span>
+      </div>
+
+      <div id="statusBadge" class="status-badge status-offline">
+        <i class="fa-solid fa-video-slash"></i> البث متوقف
+      </div>
+    </div>
+
+    <div class="center-panel">
+      <div class="video-container" id="videoContainer">
+        <button class="fullscreen-btn" onclick="toggleFullScreen()" title="ملء الشاشة">
+          <i class="fa-solid fa-expand" id="fsIcon"></i>
+        </button>
+        
+        <div class="video-overlay" id="videoOverlay"></div>
+
+        <div class="video-wrapper" id="videoWrapper">
+          <div class="placeholder-content" id="placeholder">
+            <i class="fa-solid fa-tv"></i>
+            <h3>في انتظار إشارة البث...</h3>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <h3 class="panel-title"><i class="fa-solid fa-trophy"></i> نتائج السحب المباشر</h3>
+      <ul class="results-list" id="winnersList">
+        <div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 13px; font-weight: 700;">
+          <i class="fa-solid fa-hourglass-half" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+          في انتظار إجراء السحب...
+        </div>
+      </ul>
+    </div>
+
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
+      authDomain: "databaseemploye.firebaseapp.com",
+      projectId: "databaseemploye",
+      storageBucket: "databaseemploye.firebasestorage.app",
+      messagingSenderId: "408231477466",
+      appId: "1:408231477466:web:e3bf5bd3eaca7cdcd3a5e3"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+// 🔴 كود التوجيه الذكي لزر الرجوع (محدث بالترتيب الجديد) 🔴
+    document.addEventListener("DOMContentLoaded", () => {
+        // جلب صفة المستخدم المسجل
+        const role = localStorage.getItem('cwoste_auth_role') || sessionStorage.getItem('cwoste_auth_role');
+        const backBtn = document.getElementById('dynamicBackBtn');
+        
+        if (!backBtn) return;
+
+        // التحقق من الصفة وتحديد مسار العودة المناسب
+        if (role === 'Employee') {
+            backBtn.href = 'employee_dashboard.html'; // العودة للوحة الموظفين
+        } else if (role === 'Retiree' || role === 'Widow') {
+            backBtn.href = 'retiree_dashboard.html'; // العودة للوحة المتقاعدين والأرامل
+        } else {
+            backBtn.href = 'index.html'; // العودة لملف الإدارة (إذا لم يكن موظفاً أو متقاعداً)
+        }
+    });
+
+
+   let isCurrentlyPlaying = false;
+    let lastWinnersCount = 0; 
+    let lastWaitlistCount = 0; 
+    let isFirstLoad = true;
+
+
+    const videoContainer = document.getElementById('videoContainer');
+    const fsIcon = document.getElementById('fsIcon');
+    const videoOverlay = document.getElementById('videoOverlay'); // اللوحة الزجاجية
+    
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        if (videoContainer.requestFullscreen) videoContainer.requestFullscreen();
+        else if (videoContainer.webkitRequestFullscreen) videoContainer.webkitRequestFullscreen();
+        fsIcon.classList.replace('fa-expand', 'fa-compress');
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        fsIcon.classList.replace('fa-compress', 'fa-expand');
+      }
+    }
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) fsIcon.classList.replace('fa-compress', 'fa-expand');
+    });
+
+   function triggerWinnerAnimation(person) {
+      const overlay = document.getElementById('winnerOverlay');
+      const card = document.getElementById('winnerCard');
+      const iconDiv = document.querySelector('.fireworks'); 
+      
+      const isWin = person.type === 'win';
+      
+      // 1. تخصيص النصوص والألوان حسب النوع (مستفيد / احتياط)
+      document.getElementById('popupStatus').textContent = isWin ? 'مستفيد جديد!' : 'تم التسجيل في الاحتياط';
+      document.getElementById('popupStatus').style.color = isWin ? 'var(--success)' : '#ea580c';
+      
+      // 2. تغيير لون حدود البطاقة والخلفية
+      card.style.borderColor = isWin ? 'var(--success)' : '#f59e0b';
+      card.style.background = isWin ? 'linear-gradient(135deg, #ffffff, #f0fdf4)' : 'linear-gradient(135deg, #ffffff, #fff7ed)';
+      
+      // 3. تغيير الأيقونة (مفرقعات للمستفيد، ساعة رملية للاحتياط)
+      iconDiv.innerHTML = isWin ? '🎉' : '⏳';
+      iconDiv.style.animation = isWin ? 'bounce 1s infinite' : 'none';
+      
+     // 4. تغيير لون اسم الشخص
+      document.getElementById('popupName').textContent = person.name;
+      document.getElementById('popupName').style.color = isWin ? 'var(--primary-dark)' : '#b45309';
+
+      // 🔴 التعديل هنا: استخدام innerHTML لإنشاء سطر جديد للفوج 🔴
+      let infoHTML = `الفئة: ${person.category} | الوجهة: ${person.destination}`;
+      if (person.cohort && person.cohort !== "---") {
+          // النزول لسطر جديد مع تصغير خط الفوج قليلاً لتمييزه
+          infoHTML += `<br><span style="font-size: 14px; opacity: 0.85;">الفوج: ${person.cohort}</span>`;
+      }
+      document.getElementById('popupInfo').innerHTML = infoHTML;
+
+      overlay.classList.add('active');
+      setTimeout(() => { overlay.classList.remove('active'); }, 4000);
+    }
+
+
+    function createResultItem(person) {
+      const isWin = person.type === 'win';
+      const icon = isWin ? 'fa-check' : 'fa-clock';
+      const typeClass = isWin ? 'win' : 'wait';
+      const placeText = person.place ? person.place : (isWin ? 'مستفيد' : 'احتياط');
+
+      return `
+        <li class="result-item ${typeClass}">
+          <div class="result-icon"><i class="fa-solid ${icon}"></i></div>
+          <div>
+            <span class="result-name">${person.name}</span>
+            <span style="font-size:11px; color:#64748b; font-weight:700;">${placeText}</span>
+          </div>
+        </li>
+      `;
+    }
+
+    const videoWrapper = document.getElementById('videoWrapper');
+    
+  function playLiveVideo(videoInput) {
+        const wrapper = document.getElementById('videoWrapper');
+        const container = document.getElementById('videoContainer');
+        const overlay = document.getElementById('videoOverlay');
+        const badge = document.getElementById('statusBadge');
+
+        // تحديث الشارة والإطار ليدل على أن البث "مباشر الآن"
+        if(badge) {
+            badge.className = 'status-badge status-live';
+            badge.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> مباشر الآن';
+        }
+        if(container) container.classList.add('live');
+        
+        // 🔴 إخفاء النافذة الزجاجية الشفافة للسماح للموظف بالنقر والتحكم في الفيديو 🔴
+        if(overlay) overlay.style.display = 'none';
+
+        // التحقق والتشغيل: فيسبوك أو يوتيوب
+        if (videoInput.includes('facebook.com')) {
+            // 🔵 تشغيل بث فيسبوك (أمر التشغيل التلقائي متواجد وبدون كتم الصوت) 🔵
+            const fbEncodedUrl = encodeURIComponent(videoInput);
+            wrapper.innerHTML = `
+                <iframe src="https://www.facebook.com/plugins/video.php?href=${fbEncodedUrl}&show_text=0&width=auto&autoplay=true" 
+                        width="100%" height="100%" style="border:none;overflow:hidden; border-radius: 12px; position:absolute; top:0; left:0;" 
+                        scrolling="no" frameborder="0" allowfullscreen="true" 
+                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
+                </iframe>
+            `;
+        } else {
+            // 🔴 تشغيل بث يوتيوب (أمر التشغيل التلقائي متواجد وبدون كتم الصوت) 🔴
+            const cacheBuster = new Date().getTime(); 
+            wrapper.innerHTML = `
+                <iframe src="https://www.youtube.com/embed/${videoInput}?autoplay=1&rel=0&playsinline=1&cb=${cacheBuster}" 
+                        width="100%" height="100%" style="border-radius: 12px; position:absolute; top:0; left:0; border:none;" 
+                        allow="autoplay; encrypted-media" allowfullscreen>
+                </iframe>
+            `;
+        }
+        
+        isCurrentlyPlaying = true;
+    }
+
+    function stopLiveVideo() {
+        const badge = document.getElementById('statusBadge');
+        if(badge) {
+            badge.className = 'status-badge status-offline';
+            badge.innerHTML = '<i class="fa-solid fa-video-slash"></i> البث متوقف';
+        }
+        videoContainer.classList.remove('live');
+        videoOverlay.style.display = 'none'; // إخفاء اللوحة
+        videoWrapper.innerHTML = `<div class="placeholder-content"><i class="fa-solid fa-video-slash"></i><h3>تم إيقاف البث</h3></div>`;
+        isCurrentlyPlaying = false;
+    }
+
+    db.collection("config_cwoste").doc("live_broadcast").onSnapshot((doc) => {
+      if(doc.exists) {
+        const data = doc.data();
+        
+        const titleElement = document.getElementById('lotteryTitleType');
+        if (data.lotteryType && data.lotteryType !== "---") {
+            titleElement.innerText = data.lotteryType;
+            titleElement.style.color = "white";
+        } else {
+            titleElement.innerText = "جاري التحضير...";
+            titleElement.style.color = "#fb8c00";
+        }
+
+        document.getElementById('infoActivity').innerText = data.campCategory || '---';
+        document.getElementById('infoDestination').innerText = data.campDestination || '---';
+        document.getElementById('infoCohort').innerText = data.campCohort || '---';
+
+        const winners = data.campWinners || [];
+        const waitlist = data.campWaitlist || [];
+        
+       // 1. تحديد من هو الشخص الجديد بدقة (مستفيد أم احتياط)
+        let newestPerson = null;
+        if (winners.length > lastWinnersCount) {
+            // 🔴 التعديل هنا: إضافة cohort 🔴
+            newestPerson = { ...winners[winners.length - 1], type: 'win', category: data.campCategory, destination: data.campDestination, cohort: data.campCohort };
+        } else if (waitlist.length > lastWaitlistCount) {
+            // 🔴 التعديل هنا: إضافة cohort 🔴
+            newestPerson = { ...waitlist[waitlist.length - 1], type: 'wait', category: data.campCategory, destination: data.campDestination, cohort: data.campCohort };
+        }
+
+        // 2. تشغيل الأنيميشن للشخص الجديد فقط
+        if (newestPerson && !isFirstLoad) {
+            triggerWinnerAnimation(newestPerson); 
+        }
+
+        // 3. دمج القوائم بالترتيب الطبيعي (بدون reverse) ليكون القديم فوق والجديد يضاف تحته
+        const allResults = [
+          ...winners.map(w => ({ ...w, type: 'win', category: data.campCategory, destination: data.campDestination })),
+          ...waitlist.map(w => ({ ...w, type: 'wait', category: data.campCategory, destination: data.campDestination }))
+        ];
+
+        const listDiv = document.getElementById('winnersList');
+        
+        if (allResults.length > 0) {
+          listDiv.innerHTML = allResults.map(person => createResultItem(person)).join('');
+          // التمرير التلقائي للأسفل لرؤية الفائز الجديد
+          setTimeout(() => { listDiv.scrollTop = listDiv.scrollHeight; }, 100);
+        } else {
+          listDiv.innerHTML = `<div style="text-align: center; color: #94a3b8; padding: 20px; font-size: 13px; font-weight: 700;"><i class="fa-solid fa-hourglass-half" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>في انتظار بدء إعلان النتائج...</div>`;
+        }
+
+        // 4. تحديث العدادات للمرة القادمة
+        lastWinnersCount = winners.length;
+        lastWaitlistCount = waitlist.length;
+
+
+
+      
+
+        const isBroadcasting = data.isBroadcasting;
+        const ytId = data.youtubeId;
+
+        if (isBroadcasting && ytId && !isCurrentlyPlaying) {
+            
+            if (isFirstLoad) {
+                Swal.fire({
+                    title: '🔴 البث المباشر مستمر',
+                    html: 'اضغط على الزر أدناه للالتحاق بمشاهدة القرعة الآن.',
+                    icon: 'info',
+                    confirmButtonText: 'الدخول للمشاهدة <i class="fa-solid fa-play"></i>',
+                    confirmButtonColor: '#d32f2f',
+                    allowOutsideClick: false
+                }).then(() => {
+                    playLiveVideo(ytId); // تشغيل بدون وقت
+                });
+            } else {
+                playLiveVideo(ytId); // تشغيل بدون وقت
+            }
+            
+        } else if (!isBroadcasting && isCurrentlyPlaying) {
+            stopLiveVideo();
+        }
+        
+        isFirstLoad = false; 
+      }
+    });
+
+
+  </script>
+</body>
+</html>

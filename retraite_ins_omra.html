@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل العمرة - المتقاعدين والأرامل</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+      tailwind.config = {
+          theme: {
+              extend: {
+                  fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                  colors: {
+                      primary: '#1976d2',
+                      primaryDark: '#0d47a1',
+                      accent: '#fb8c00'
+                  }
+              }
+          }
+      }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .glass-card {
+        @apply bg-white/90 backdrop-blur-xl border border-white/60 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-6 sm:p-8 w-full max-w-[850px] mx-auto relative;
+      }
+      .input-wrapper { @apply relative mb-3; }
+      .modern-input {
+        @apply w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all font-bold text-slate-800 text-sm shadow-sm;
+      }
+      .readonly-input {
+        @apply bg-slate-100 border-slate-200 text-slate-600 cursor-not-allowed select-none;
+      }
+      .form-label {
+        @apply text-[12px] font-black text-primaryDark mb-1.5 block drop-shadow-sm;
+      }
+      .btn-primary {
+        @apply w-full bg-gradient-to-l from-primaryDark to-primary text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+      }
+      .btn-success {
+        @apply w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:shadow-green-500/40 hover:-translate-y-0.5 transition-all duration-300 text-base flex items-center justify-center gap-2;
+      }
+    }
+    body { background-color: #f8fafc; }
+  </style>
+</head>
+<body class="font-cairo text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white relative">
+
+  <!-- الخلفية الداكنة والصورة الموحدة -->
+  <div class="fixed inset-0 z-[-2] bg-slate-900">
+    <img src="https://lh3.googleusercontent.com/d/1i6isLnMztMiw2j7bgPNC4Phg9kWg7E3Q" alt="خلفية" class="w-full h-full object-cover opacity-90">
+    <div class="absolute inset-0 bg-slate-900/10"></div>
+  </div>
+
+  <nav class="absolute w-full top-0 z-40 py-4 px-6 flex justify-between items-center">
+    <div class="flex items-center gap-2"></div>
+    <a href="retiree_dashboard.html" class="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1.5 rounded-full font-bold shadow-sm hover:bg-white hover:text-primaryDark transition-all text-xs flex items-center gap-2">
+      عودة للوحة التحكم <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </nav>
+
+  <main id="formContainer" class="w-full hidden z-10 mt-12">
+    <div class="glass-card">
+      <div class="text-center mb-8 border-b border-slate-200 pb-6">
+        <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="الشعار" class="w-24 h-24 mx-auto mb-4 drop-shadow-md">
+        <h1 id="formTitle" class="text-2xl sm:text-3xl font-black text-primaryDark">استمارة تسجيل المتقاعدين في العمرة</h1>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        
+        <div class="input-wrapper">
+            <label class="form-label">الاسم واللقب</label>
+            <input type="text" id="regName" class="modern-input readonly-input" readonly>
+        </div>
+        <div class="input-wrapper">
+            <label class="form-label">تاريخ الميلاد</label>
+            <input type="text" id="regBirthDate" class="modern-input readonly-input text-right" dir="ltr" readonly>
+        </div>
+        <div class="input-wrapper">
+            <label class="form-label">الصفة</label>
+            <input type="text" id="regStatus" class="modern-input readonly-input" readonly>
+        </div>
+        <div class="input-wrapper">
+            <label class="form-label">دائرة الإقامة</label>
+            <input type="text" id="regDaira" class="modern-input readonly-input" readonly>
+        </div>
+        <div class="input-wrapper">
+            <label class="form-label">بلدية الإقامة</label>
+            <input type="text" id="regBaladiya" class="modern-input readonly-input" readonly>
+        </div>
+        <div class="input-wrapper md:col-span-1">
+            <label class="form-label">رقم الهاتف</label>
+            <input type="text" id="regPhone" class="modern-input readonly-input text-right" dir="ltr" readonly>
+        </div>
+
+        <!-- صندوق الإقرار -->
+        <div class="input-wrapper md:col-span-2 mt-4 p-4 bg-blue-50/50 rounded-xl border border-blue-200 flex items-start gap-3 cursor-pointer" onclick="toggleAck()">
+            <input type="checkbox" id="ackCheck" class="mt-1 w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer pointer-events-none">
+            <label class="text-sm font-bold text-slate-700 leading-relaxed cursor-pointer pointer-events-none">
+                أقر بأن جميع البيانات الواردة في ملفي الشخصي صحيحة، وأتحمل المسؤولية الكاملة في حال اكتشاف أي تلاعب أو معلومات مغلوطة.
+            </label>
+        </div>
+
+      </div>
+
+      <div class="mt-8 max-w-md mx-auto">
+        <button id="submitBtn" class="btn-primary opacity-50 cursor-not-allowed" onclick="submitForm()" disabled>تأكيد وتسجيل <i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // =========================================
+    // إعدادات Firebase
+    // =========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
+      authDomain: "databaseemploye.firebaseapp.com",
+      projectId: "databaseemploye",
+      storageBucket: "databaseemploye.firebasestorage.app",
+      messagingSenderId: "408231477466",
+      appId: "1:408231477466:web:e3bf5bd3eaca7cdcd3a5e3"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    // سكريبت العمرة الموحد
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyjzYgsVAY4VF3iRRCoFcFFwv_IR3zM5ZPwrDGjiEZU4cZ2wPWMncD29diFK8hDbBE9xQ/exec";
+
+    let isEditMode = false;
+    let retireeData = null;
+    let existingRecord = null;
+
+    // =========================================
+    // نظام الوصل الفخم
+    // =========================================
+    const receiptBranding = {
+      logoUrl: "https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15",
+      govTitle: "الجمهورية الجزائرية الديمقراطية الشعبية",
+      ministry: "وزارة التربية الوطنية",
+      directorate: "مديرية التربية لولاية توقرت",
+      committee: "اللجنة الوطنية للخدمات الاجتماعية لعمال التربية",
+      service: "اللجنة الولائية للخدمات الإجتماعية لعمال التربية لولاية توقرت",
+      addressLine: "المقر: حي خميستي، توقرت",
+      contactLine: "الهاتف: 91 39 98 030       - البريد: cwostetggt55@gmail.com"
+    };
+
+    function escapeHtml(str){ return String(str || '').replace(/[&<>"'`=\/]/g, function(s){ return '&#' + s.charCodeAt(0) + ';'; }); }
+
+function formatCleanDateTime(dateStr) {
+        if (!dateStr) return 'غير متوفر';
+        try {
+            let d = null;
+            
+            // 1. معالجة Firebase Timestamp (Object)
+            if (typeof dateStr === 'object' && dateStr.seconds) {
+                d = new Date(dateStr.seconds * 1000);
+            } 
+            // 2. معالجة Firebase Timestamp (String)
+            else if (typeof dateStr === 'string' && dateStr.includes('Timestamp')) {
+                const match = dateStr.match(/seconds=(\d+)/);
+                if (match && match[1]) {
+                    d = new Date(parseInt(match[1]) * 1000);
+                }
+            } 
+            // 3. معالجة الصيغة المدمجة بـ ll
+            else if (typeof dateStr === 'string' && dateStr.includes('ll')) {
+                const parts = dateStr.split('ll');
+                if (parts.length === 2) {
+                    return `${parts[1].trim()} ${parts[0].trim()}`; 
+                }
+            } 
+            // 4. معالجة صيغة جوجل شيت (يوم-شهر-سنة مسافة ساعة:دقيقة:ثانية)
+            else if (typeof dateStr === 'string' && /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$/.test(dateStr.trim())) {
+                const parts = dateStr.trim().split(' ');
+                const dateParts = parts[0].split('-');
+                return `${dateParts[2]}-${dateParts[1]}-${dateParts[0]} ${parts[1]}`; 
+            } 
+            // 5. الحالات الأخرى
+            else {
+                d = new Date(dateStr);
+            }
+
+            // إرجاع التاريخ بالتنسيق المطلوب (YYYY-MM-DD HH:mm:ss)
+            if (d && !isNaN(d.getTime())) {
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const dd = String(d.getDate()).padStart(2, '0');
+                const hh = String(d.getHours()).padStart(2, '0');
+                const min = String(d.getMinutes()).padStart(2, '0');
+                const ss = String(d.getSeconds()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+            }
+        } catch(e) {
+            console.error(e);
+        }
+        
+        return String(dateStr);
+    }
+
+
+
+    function formatPhoneNumber(phone) {
+        let val = String(phone || '').replace(/\D/g, '').slice(0, 10);
+        return val.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+    }
+
+    // تجهيز بيانات الوصل
+   // تجهيز بيانات الوصل
+    function prepareReceiptData(raw = {}, options = {}) {
+      const normalize = (value) => {
+        if (value === undefined || value === null) return "";
+        return String(value).trim();
+      };
+
+      const data = {
+        name: normalize(raw.firstName || raw.name) + " " + normalize(raw.lastName || ""), 
+        birthDate: normalize(raw.birthDate),
+        status: normalize(raw.status),
+        daira: normalize(raw.residenceDistrict || raw.daira || raw.district),
+        baladiya: normalize(raw.residenceMunicipality || raw.baladiya || raw.municipality),
+        personalPhone: normalize(raw.phone || raw.personalPhone)
+      };
+      
+      if(raw.name && !raw.firstName) {
+          data.name = raw.name; 
+      } else {
+          data.name = (normalize(raw.firstName) + " " + normalize(raw.lastName)).trim();
+      }
+
+      if (data.personalPhone && data.personalPhone.length === 10 && !data.personalPhone.includes(' ')) {
+        let p = data.personalPhone;
+        data.personalPhone = p.slice(0, 2) + ' ' + p.slice(2, 4) + ' ' + p.slice(4, 6) + ' ' + p.slice(6, 8) + ' ' + p.slice(8, 10);
+      }
+
+      // 🌟 التعديل هنا: إعطاء الأولوية لتاريخ جوجل شيت (date) على تاريخ الحساب (createdAt) 🌟
+      data.registrationDate = options.registrationDate || raw.date || raw.createdAt || new Date().toISOString();
+      data.modificationDate = options.modificationDate || raw.modificationDate || raw.updatedAt || "";
+      data.actionSource = options.actionSource || "";
+
+      return data;
+    }
+
+    // قالب الوصل
+    function renderReceiptTemplate(data = {}) {
+      const safe = (value) => escapeHtml(value || "-");
+      const registrationMoment = formatCleanDateTime(data.registrationDate);
+      const modificationMoment = data.modificationDate ? formatCleanDateTime(data.modificationDate) : "";
+
+      const modificationLine = modificationMoment
+        ? `<div class="meta-item">آخر تعديل: ${safe(modificationMoment)}</div>`
+        : "";
+
+      return `
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <title>وصل التسجيل - ${receiptBranding.service}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+          body { margin: 0; padding: 25px; background: #f2f5fb; font-family: 'Cairo', sans-serif; color: #1d2752; }
+          .receipt-card { max-width: 820px; margin: 0 auto; background: #fff; border-radius: 18px; padding: 32px 36px; box-shadow: 0 20px 45px rgba(13, 55, 133, 0.15); border: 1px solid #e6ecff; }
+          .receipt-header { display: flex; gap: 22px; align-items: center; border-bottom: 2px solid #eef1ff; padding-bottom: 18px; margin-bottom: 20px; }
+          .receipt-logo { width: 110px; height: 110px; object-fit: contain; }
+          .receipt-title h1 { font-size: 20px; margin: 6px 0 2px; color: #172042; }
+          .receipt-title h2 { font-size: 18px; margin: 0; color: #4357c8; }
+          .receipt-title p { margin: 2px 0; font-size: 14px; color: #4d5c84; }
+          .receipt-subtitle { text-align: center; font-size: 22px; margin-bottom: 15px; color: #23326b; }
+          .meta { display: flex; flex-wrap: wrap; gap: 12px; background: #f5f7ff; border: 1px solid #dfe6ff; border-radius: 12px; padding: 14px; margin-bottom: 18px; }
+          .meta-item { flex: 1; min-width: 180px; font-size: 14px; font-weight: 600; color: #1e2d58; }
+          table { width: 100%; border-collapse: collapse; page-break-inside: avoid; }
+          table td { padding: 10px 0; border-bottom: 1px dashed #d9def0; font-size: 15px; }
+          table td.label { color: #5b6592; width: 38%; font-weight: 600; }
+          table tr:last-child td { border-bottom: none; }
+          .print-hint { text-align: center; margin-top: 25px; font-size: 14px; color: #4c5a88; }
+          .print-btn { margin-top: 12px; background: linear-gradient(45deg, #6a11cb, #2575fc); border: none; padding: 12px 24px; border-radius: 10px; color: #fff; font-size: 15px; cursor: pointer; font-family: 'Cairo', sans-serif; }
+          @media print {
+            body { margin: 0; padding: 10px; background: #fff; }
+            .receipt-card { max-width: 100%; margin: 0; padding: 15px 20px; box-shadow: none; border: none; page-break-inside: avoid; }
+            .receipt-header { gap: 15px; padding-bottom: 12px; margin-bottom: 12px; }
+            .receipt-logo { width: 80px; height: 80px; }
+            .receipt-title h1 { font-size: 16px; margin: 4px 0 1px; }
+            .receipt-title h2 { font-size: 14px; }
+            .receipt-title p { margin: 1px 0; font-size: 11px; }
+            .receipt-subtitle { font-size: 18px; margin-bottom: 10px; }
+            .meta { gap: 8px; padding: 10px; margin-bottom: 12px; }
+            .meta-item { font-size: 12px; min-width: 150px; }
+            table { page-break-inside: avoid; }
+            table tr { page-break-inside: avoid; page-break-after: auto; }
+            table td { padding: 6px 0; font-size: 13px; }
+            table td.label { width: 35%; }
+            .print-hint { display: none; }
+            .print-btn { display: none; }
+            @page { size: A4; margin: 0.5cm; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt-card">
+          <div class="receipt-header">
+            <img src="${receiptBranding.logoUrl}" alt="شعار اللجنة" class="receipt-logo">
+            <div class="receipt-title">
+              <p>${receiptBranding.govTitle}</p>
+              <p>${receiptBranding.ministry}</p>
+              <p>${receiptBranding.directorate}</p>
+              <h1>${receiptBranding.committee}</h1>
+              <h2>${receiptBranding.service}</h2>
+              <p>${receiptBranding.addressLine}</p>
+              <p>${receiptBranding.contactLine}</p>
+            </div>
+          </div>
+          <h3 class="receipt-subtitle">وصل تسجيل المتقاعدين والأرامل في العمرة</h3>
+          <div class="meta">
+            <div class="meta-item">تاريخ التسجيل: ${safe(registrationMoment)}</div>
+            ${modificationLine}
+          </div>
+          <table>
+            <tbody>
+              <tr>
+                <td class="label">الاسم واللقب</td>
+                <td>${safe(data.name)}</td>
+              </tr>
+              <tr>
+                <td class="label">تاريخ الميلاد</td>
+                <td dir="ltr" style="text-align:right;">${safe(data.birthDate)}</td>
+              </tr>
+              <tr>
+                <td class="label">الصفة</td>
+                <td>${safe(data.status)}</td>
+              </tr>
+              <tr>
+                <td class="label">دائرة الإقامة</td>
+                <td>${safe(data.daira)}</td>
+              </tr>
+              <tr>
+                <td class="label">بلدية الإقامة</td>
+                <td>${safe(data.baladiya)}</td>
+              </tr>
+              <tr>
+                <td class="label">رقم الهاتف</td>
+                <td style="direction:ltr;unicode-bidi:bidi-override;text-align:right;">${safe(data.personalPhone)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="print-hint">
+            يمكن طباعة الوصل أو حفظه بصيغة PDF عبر زر الطباعة في الأسفل.
+            <br>
+            <button class="print-btn" onclick="window.print()">طباعة الوصل</button>
+          </div>
+        </div>
+      </body>
+      </html>
+      `;
+    }
+
+    function openReceiptPreview(rawData, options) {
+      const normalizedData = prepareReceiptData(rawData, options);
+      const receiptHTML = renderReceiptTemplate(normalizedData);
+      const receiptWindow = window.open("", "_blank");
+
+      if (!receiptWindow) {
+        Swal.fire("تنبيه", "يرجى السماح بفتح النوافذ المنبثقة لتحميل الوصل", "warning");
+        return;
+      }
+
+      receiptWindow.document.open();
+      receiptWindow.document.write(receiptHTML);
+      receiptWindow.document.close();
+      receiptWindow.focus();
+    }
+
+    // =========================================
+    // دورة حياة التطبيق والتحقق من الأهلية
+    // =========================================
+    document.addEventListener("DOMContentLoaded", () => {
+        checkRegistrationStatus();
+    });
+
+    function checkRegistrationStatus() {
+        Swal.fire({ title: 'جاري التحقق من النظام...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        db.collection("config_cwoste").doc("omra").get().then((doc) => {
+            if (doc.exists) {
+                const data = doc.data();
+                if (data.registrationOpen === false) {
+                    Swal.fire({ icon: 'warning', title: 'التسجيل مغلق', text: 'عذراً، فترة التسجيل في العمرة مغلقة حالياً.', confirmButtonText: 'عودة', allowOutsideClick: false }).then(() => { window.location.href = 'retiree_dashboard.html'; });
+                    return;
+                }
+                authenticateUser(); 
+            } else {
+                authenticateUser();
+            }
+        }).catch(err => {
+            Swal.fire('خطأ', 'تعذر الاتصال بالنظام.', 'error').then(() => window.location.href = 'retiree_dashboard.html');
+        });
+    }
+
+    async function authenticateUser() {
+        const token = localStorage.getItem('cwoste_auth_token') || sessionStorage.getItem('cwoste_auth_token');
+        const role = localStorage.getItem('cwoste_auth_role') || sessionStorage.getItem('cwoste_auth_role');
+
+        if (!token || (role !== 'Retiree' && role !== 'Widow')) {
+            window.location.href = 'auth_system.html';
+            return;
+        }
+
+        try {
+            const querySnap = await db.collection('compte_cwoste').doc('retiree_widow_accounts').collection('users').where('ccp', '==', token).limit(1).get();
+            if (querySnap.empty) {
+                window.location.href = 'auth_system.html';
+                return;
+            }
+            retireeData = querySnap.docs[0].data();
+            
+            if (!retireeData.status) {
+                retireeData.status = (role === 'Retiree') ? 'متقاعد(ة)' : 'أرمل(ة)';
+            }
+
+            if(!retireeData.residenceDistrict || !retireeData.residenceMunicipality || !retireeData.phone || !retireeData.birthDate) {
+                Swal.fire({ icon: 'warning', title: 'بيانات غير مكتملة', text: 'يرجى إكمال بيانات دائرة وبلدية الإقامة وتاريخ الميلاد ورقم الهاتف في ملفك الشخصي أولاً.', confirmButtonText: 'العودة للوحة التحكم', allowOutsideClick: false }).then(() => { window.location.href = 'retiree_dashboard.html'; });
+                return;
+            }
+
+            // 🌟 التعديل الذكي هنا: تحويل رقم الهاتف إلى صيغة المسافات قبل إرساله للتحقق 🌟
+            let cleanPhone = String(retireeData.phone || '').replace(/\D/g, '').slice(0, 10);
+            let spacedPhone = cleanPhone.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+            retireeData.phone = spacedPhone; // تحديث الرقم في الذاكرة ليعمل بالمسافات في كل مكان
+
+            // الآن سيتم التحقق من الرقم بالمسافات ليطابق جوجل شيت تماماً
+            checkPreviousRegistration(retireeData.phone);
+
+        } catch (error) {
+            Swal.fire('خطأ', 'فشل تحميل بيانات الحساب.', 'error').then(() => window.location.href = 'retiree_dashboard.html');
+        }
+    }
+
+    async function checkPreviousRegistration(phone) {
+        Swal.fire({ title: 'جاري التحقق من سجلاتك...', text: 'لحظات من فضلك', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+            const benParams = new URLSearchParams();
+            benParams.append("action", "check_previous_beneficiary");
+            benParams.append("phone", phone);
+            benParams.append("loanType", "retirees"); 
+
+            const benRes = await fetch(scriptURL, { method: "POST", body: benParams });
+            const benData = await benRes.json();
+
+            if (benData.result === "previous_beneficiary") {
+                Swal.fire({
+                    icon: "error", title: "لا يمكنك التسجيل",
+                    html: `<p class="font-bold text-red-600 mb-2">${benData.message || 'أنت مستفيد(ة) من العمرة سابقاً'}</p><p class="text-sm">العمرة تُمنح مرة واحدة خلال المسار المهني.</p>`,
+                    confirmButtonText: "عودة للوحة التحكم", confirmButtonColor: "#d32f2f", allowOutsideClick: false
+                }).then(() => window.location.href = 'retiree_dashboard.html');
+                return;
+            }
+
+            const existParams = new URLSearchParams();
+            existParams.append("action", "check_existing");
+            existParams.append("phone", phone);
+            existParams.append("loanType", "retirees");
+
+            const existRes = await fetch(scriptURL, { method: "POST", body: existParams });
+            const existData = await existRes.json();
+
+           if (existData.result === "exists") {
+                Swal.close();
+                isEditMode = true;
+                existingRecord = existData.data;
+
+                Swal.fire({
+                    icon: "info", title: "لديك تسجيل حالي",
+                    html: `
+                        <div class="text-right text-sm bg-blue-50 p-4 rounded-xl border border-blue-200 mt-2 leading-relaxed">
+                            <b>تاريخ التسجيل:</b> <span dir="ltr">${formatCleanDateTime(existingRecord.date || existingRecord.createdAt)}</span>
+                            ${existingRecord.modificationDate ? `<br><b>آخر تعديل:</b> <span dir="ltr">${formatCleanDateTime(existingRecord.modificationDate)}</span>` : ''}
+                        </div>
+                        <button type="button" id="existingReceiptBtn" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2">
+                            تحميل وصل التسجيل <i class="fa-solid fa-print"></i>
+                        </button>
+                    `,
+                    showCancelButton: true, showDenyButton: true,
+                    confirmButtonText: "تحديث بياناتي", denyButtonText: "إلغاء تسجيلي", cancelButtonText: "عودة",
+                    confirmButtonColor: "#fb8c00", denyButtonColor: "#d32f2f", cancelButtonColor: "#64748b",
+                    didOpen: () => {
+                        document.getElementById('existingReceiptBtn').addEventListener('click', () => {
+                            openReceiptPreview(existingRecord, { actionSource: "استخراج التسجيل السابق" });
+                        });
+                    }
+                }).then((resAction) => {
+                    if (resAction.isConfirmed) {
+                        openForm(); 
+                    } else if (resAction.isDenied) {
+                        deleteRegistration(phone); 
+                    } else if (resAction.isDismissed) {
+                        window.location.href = 'retiree_dashboard.html';
+                    }
+                });
+                return;
+            }
+
+            Swal.close();
+            openForm();
+
+        } catch (error) {
+            Swal.fire('خطأ بالخادم', 'تعذر التحقق من سجلاتك. حاول لاحقاً.', 'error').then(() => window.location.href = 'retiree_dashboard.html');
+        }
+    }
+
+    function openForm() {
+        document.getElementById('formContainer').classList.remove('hidden');
+        document.getElementById('formTitle').textContent = isEditMode ? 'تحديث تسجيل العمرة' : 'استمارة تسجيل العمرة';
+        
+        const btn = document.getElementById('submitBtn');
+        if(isEditMode) {
+            btn.innerHTML = 'حفظ التحديثات <i class="fa-solid fa-floppy-disk"></i>';
+            btn.classList.replace('btn-primary', 'btn-success');
+        }
+
+        document.getElementById('regName').value = `${retireeData.firstName} ${retireeData.lastName}`;
+        document.getElementById('regBirthDate').value = retireeData.birthDate;
+        document.getElementById('regStatus').value = retireeData.status;
+        document.getElementById('regDaira').value = retireeData.residenceDistrict;
+        document.getElementById('regBaladiya').value = retireeData.residenceMunicipality;
+        
+        let p = String(retireeData.phone || '');
+        if (p.length === 10 && !p.includes(' ')) p = p.slice(0, 2) + ' ' + p.slice(2, 4) + ' ' + p.slice(4, 6) + ' ' + p.slice(6, 8) + ' ' + p.slice(8, 10);
+        document.getElementById('regPhone').value = p;
+
+        const ackCheck = document.getElementById('ackCheck');
+        ackCheck.checked = false;
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+
+    function toggleAck() {
+        const check = document.getElementById('ackCheck');
+        const btn = document.getElementById('submitBtn');
+        check.checked = !check.checked;
+        
+        if (check.checked) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    // =========================================
+    // العمليات (تسجيل، تحديث، حذف)
+    // =========================================
+async function submitForm() {
+        const btn = document.getElementById('submitBtn');
+        const orgText = btn.innerHTML;
+        btn.innerHTML = 'جاري الإرسال... <i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        let cleanPhone = String(retireeData.phone || '').replace(/\D/g, '').slice(0, 10);
+        let spacedPhone = cleanPhone.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+
+        const params = new URLSearchParams();
+        params.append("action", isEditMode ? "update_by_phone" : "register_by_phone");
+        params.append("loanType", "retirees");
+        params.append("phone", spacedPhone);
+        params.append("personalPhone", spacedPhone); 
+        params.append("lastName", retireeData.lastName || "");
+        params.append("name", retireeData.firstName || ""); 
+        params.append("firstName", retireeData.firstName || ""); 
+        params.append("birthDate", retireeData.birthDate || "");
+        params.append("status", retireeData.status || "");
+        params.append("daira", retireeData.residenceDistrict || "");
+        params.append("baladiya", retireeData.residenceMunicipality || "");
+
+        // 🌟 تجهيز تاريخ التعديل (في حالة التحديث فقط) 🌟
+        let modDateStr = "";
+        if (isEditMode) {
+            const now = new Date();
+            modDateStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} ll ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            params.append("modificationDate", modDateStr);
+        }
+
+        try {
+            const res = await fetch(scriptURL, { method: "POST", body: params });
+            const data = await res.json();
+
+            if (data.result === "success") {
+                document.getElementById('formContainer').classList.add('hidden');
+                // 🌟 التعديل الذكي هنا: الحفاظ على تاريخ التسجيل الأصلي عند التعديل 🌟
+                existingRecord = {
+                    ...retireeData,
+                    phone: spacedPhone,
+                    // إذا كان تعديلاً: احتفظ بالتاريخ القديم. إذا كان تسجيلاً جديداً: خذ التاريخ الجديد.
+                    date: isEditMode ? (existingRecord.date || existingRecord.createdAt) : (data.date || new Date().toISOString()),
+                    // إذا كان تعديلاً: ضع تاريخ التعديل الجديد.
+                    modificationDate: isEditMode ? modDateStr : ""
+                };
+
+                Swal.fire({
+                    icon: "success", title: isEditMode ? "تم التحديث" : "تم التسجيل بنجاح",
+                    html: `
+                        <p class="mb-4 text-sm text-slate-600">تم حفظ بياناتك لدى اللجنة بنجاح.</p>
+                        <button type="button" id="successReceiptBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                            تحميل وصل التسجيل <i class="fa-solid fa-print"></i>
+                        </button>
+                    `,
+                    confirmButtonText: "عودة للوحة التحكم",
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        document.getElementById('successReceiptBtn').addEventListener('click', () => {
+                            openReceiptPreview(existingRecord, { actionSource: isEditMode ? "تعديل التسجيل" : "تسجيل جديد" });
+                        });
+                    }
+                }).then(() => window.history.back());
+            } else {
+                throw new Error(data.message || 'حدث خطأ غير متوقع.');
+            }
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'فشل الإرسال', text: err.message });
+            btn.innerHTML = orgText;
+            btn.disabled = false;
+        }
+    }
+
+    async function deleteRegistration(phone) {
+        Swal.fire({ title: 'جاري إلغاء التسجيل...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const params = new URLSearchParams();
+            params.append("action", "delete_by_phone");
+            params.append("phone", phone);
+            params.append("loanType", "retirees");
+
+            const res = await fetch(scriptURL, { method: "POST", body: params });
+            const data = await res.json();
+
+            if (data.result === "success") {
+                Swal.fire({ icon: 'success', title: 'تم الإلغاء', text: 'تم سحب تسجيلك من قاعدة البيانات بنجاح.' }).then(() => window.location.href = 'retiree_dashboard.html');
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل إلغاء التسجيل.' }).then(() => window.location.href = 'retiree_dashboard.html');
+        }
+    }
+
+  </script>
+</body>
+</html>

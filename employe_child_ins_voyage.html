@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>رحلات أبناء القطاع - الموظفين</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+      tailwind.config = {
+          theme: {
+              extend: {
+                  fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                  colors: {
+                      primary: '#1976d2',
+                      primaryDark: '#0d47a1',
+                      accent: '#fb8c00'
+                  }
+              }
+          }
+      }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .glass-card {
+        @apply bg-white/90 backdrop-blur-xl border border-white/60 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] p-6 sm:p-8 w-full max-w-[850px] mx-auto relative;
+      }
+      .input-wrapper { @apply relative mb-3; }
+      .modern-input {
+        @apply w-full px-4 py-3 rounded-xl border border-slate-200 bg-white focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all font-bold text-slate-800 text-sm shadow-sm appearance-none;
+      }
+      .readonly-input {
+        @apply bg-slate-100 border-slate-200 text-slate-600 cursor-not-allowed select-none;
+      }
+      .form-label {
+        @apply text-[12px] font-black text-primaryDark mb-1.5 block drop-shadow-sm;
+      }
+      .btn-primary {
+        @apply w-full bg-gradient-to-l from-primaryDark to-primary text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300 text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0;
+      }
+      .btn-success {
+        @apply w-full bg-gradient-to-l from-emerald-600 to-green-500 text-white px-6 py-3.5 rounded-xl font-black shadow-lg hover:shadow-green-500/40 hover:-translate-y-0.5 transition-all duration-300 text-base flex items-center justify-center gap-2;
+      }
+      .btn-danger { 
+        @apply w-full bg-gradient-to-l from-red-700 to-red-500 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-red-500/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2; 
+      }
+      .btn-warning { 
+        @apply w-full bg-gradient-to-l from-orange-600 to-orange-400 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-orange-500/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2; 
+      }
+      .btn-info {
+        @apply w-full bg-gradient-to-l from-blue-600 to-blue-400 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:shadow-blue-500/40 hover:-translate-y-0.5 transition-all duration-300 flex items-center justify-center gap-2;
+      }
+      .child-card {
+        @apply bg-slate-50 border border-slate-200 rounded-xl p-5 mb-4 text-right transition-all hover:border-primary/40 hover:shadow-md;
+      }
+    }
+    body { background-color: #f8fafc; }
+    select { background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: left 10px center; background-size: 12px; }
+  </style>
+</head>
+<body class="font-cairo text-slate-800 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-primary selection:text-white relative">
+
+  <div class="fixed inset-0 z-[-2] bg-slate-900">
+    <img src="https://lh3.googleusercontent.com/d/1i6isLnMztMiw2j7bgPNC4Phg9kWg7E3Q" alt="خلفية" class="w-full h-full object-cover opacity-90">
+    <div class="absolute inset-0 bg-slate-900/10"></div>
+  </div>
+
+  <nav class="absolute w-full top-0 z-40 py-4 px-6 flex justify-between items-center">
+    <div class="flex items-center gap-2"></div>
+    <a href="employee_dashboard.html" class="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-1.5 rounded-full font-bold shadow-sm hover:bg-white hover:text-primaryDark transition-all text-xs flex items-center gap-2">
+      عودة للوحة التحكم <i class="fa-solid fa-arrow-right"></i>
+    </a>
+  </nav>
+
+  <main id="existingContainer" class="w-full hidden z-10 mt-12">
+    <div class="glass-card text-center relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primaryDark via-primary to-accent"></div>
+        <h2 class="text-2xl font-black text-primaryDark mb-2">أبناؤك المسجلون في الرحلات</h2>
+        <p class="text-slate-500 mb-6 font-semibold">إليك قائمة الأبناء الذين قمت بتسجيلهم في رحلات أبناء القطاع.</p>
+        
+        <div id="childrenListContainer" class="mb-6 text-right">
+            </div>
+
+        <div class="pt-5 border-t border-slate-200 flex flex-col sm:flex-row justify-center items-center gap-4 w-full mt-4">
+            <button onclick="window.location.href='employee_dashboard.html'" class="btn-danger !w-full sm:!w-[280px] !py-3.5 !text-base !font-black !bg-gradient-to-l !from-slate-600 !to-slate-500 shadow-md hover:!shadow-slate-500/40">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> عودة للوحة التحكم
+            </button>
+            <button id="btnAddNewChild" onclick="showRegistrationForm()" class="btn-primary !w-full sm:!w-[280px] !py-3.5 !text-base !font-black">
+                <i class="fa-solid fa-plus"></i> تسجيل مشارك آخر
+            </button>
+        </div>
+    </div>
+  </main>
+
+  <main id="formContainer" class="w-full hidden z-10 mt-12">
+    <div class="glass-card">
+      <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-600 via-green-500 to-teal-400" id="formTopBar"></div>
+      
+      <div class="text-center mb-8 border-b border-slate-200 pb-6 pt-4">
+        <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="الشعار" class="w-24 h-24 mx-auto mb-4 drop-shadow-md">
+        <h1 id="formTitle" class="text-2xl sm:text-3xl font-black text-primaryDark">استمارة تسجيل رحلات أبناء القطاع</h1>
+      </div>
+
+      <div class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 mb-6">
+          <h3 class="text-sm font-black text-primaryDark mb-4 flex items-center gap-2"><i class="fa-solid fa-user-tie"></i> بيانات ولي الأمر (الموظف)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <div class="input-wrapper"><label class="form-label">الرقم الوظيفي</label><input type="text" id="regEmpId" class="modern-input readonly-input" readonly></div>
+            <div class="input-wrapper"><label class="form-label">الاسم واللقب</label><input type="text" id="regName" class="modern-input readonly-input" readonly></div>
+            <div class="input-wrapper"><label class="form-label">الرتبة</label><input type="text" id="regGrade" class="modern-input readonly-input" readonly></div>
+            <div class="input-wrapper"><label class="form-label">مكان العمل</label><input type="text" id="regPlace" class="modern-input readonly-input" readonly></div>
+            <div class="input-wrapper"><label class="form-label">دائرة الإقامة</label><input type="text" id="regDaira" class="modern-input readonly-input" readonly></div>
+            <div class="input-wrapper"><label class="form-label">رقم الهاتف</label><input type="text" id="regPhone" class="modern-input readonly-input text-right" dir="ltr" readonly></div>
+            <input type="hidden" id="regBaladiya">
+          </div>
+      </div>
+
+      <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-6">
+          <h3 class="text-sm font-black text-emerald-700 mb-4 flex items-center gap-2"><i class="fa-solid fa-child-reaching"></i> بيانات المشارك (الابن/ة)</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+              <div class="input-wrapper md:col-span-2">
+                  <label class="form-label">الاسم واللقب (بالعربية فقط)</label>
+                  <input type="text" id="childFullNameField" class="modern-input" placeholder="أدخل اسم ولقب المشارك" oninput="validateArabicOnly(this)">
+              </div>
+
+              <div class="input-wrapper">
+                  <label class="form-label">تاريخ الميلاد</label>
+                  <div class="grid grid-cols-3 gap-2" dir="ltr">
+                      <select id="childYear" class="modern-input text-center !px-1" onchange="updateDays('child')"><option value="">السنة</option></select>
+                      <select id="childMonth" class="modern-input text-center !px-1" onchange="updateDays('child')"><option value="">الشهر</option></select>
+                      <select id="childDay" class="modern-input text-center !px-1" onchange="updateHiddenDate('child')"><option value="">اليوم</option></select>
+                  </div>
+                  <input type="hidden" id="childBirthDateField">
+              </div>
+
+              <div class="input-wrapper">
+                  <label class="form-label">الحالة العائلية للطفل</label>
+                  <select id="isOrphanField" class="modern-input">
+                      <option value="لا">غير يتيم (لا)</option>
+                      <option value="نعم">يتيم (نعم)</option>
+                  </select>
+              </div>
+
+              <div class="input-wrapper md:col-span-2">
+                  <label class="form-label">المستوى الدراسي</label>
+                  <select id="categoryField" class="modern-input" onchange="onChildLevelChange()">
+                      <option value="">-- اختر المستوى --</option>
+                  </select>
+              </div>
+
+              <div class="input-wrapper">
+                  <label class="form-label">دائرة التمدرس</label>
+                  <select id="childDaairaField" class="modern-input" onchange="onChildDaairaChange()">
+                      <option value="">-- اختر الدائرة --</option>
+                  </select>
+              </div>
+
+              <div class="input-wrapper">
+                  <label class="form-label">بلدية التمدرس</label>
+                  <select id="childBaladiyaField" class="modern-input">
+                      <option value="">-- اختر البلدية --</option>
+                  </select>
+              </div>
+
+              <div class="input-wrapper md:col-span-2">
+                  <label class="form-label">المؤسسة التعليمية</label>
+                  <select id="childSchoolField" class="modern-input">
+                      <option value="">-- اختر المؤسسة --</option>
+                  </select>
+              </div>
+
+              <div class="input-wrapper">
+                  <label id="gradeLabel" class="form-label text-emerald-700">المعدل (من 10 إلى 20)</label>
+                  <input type="number" id="childAgeField" step="0.01" min="10" max="20" class="modern-input" placeholder="مثال: 15.50">
+              </div>
+
+              <div class="input-wrapper md:col-span-2">
+                  <label class="form-label">الوجهة (الرحلة المتاحة)</label>
+                  <select id="tripField" class="modern-input">
+                      <option value="">-- اختر الرحلة --</option>
+                  </select>
+              </div>
+          </div>
+      </div>
+
+      <div class="input-wrapper mt-4 p-4 bg-blue-50/50 rounded-xl border border-blue-200 flex items-start gap-3 cursor-pointer" onclick="toggleAck()">
+          <input type="checkbox" id="ackCheck" class="mt-1 w-5 h-5 rounded text-primary focus:ring-primary cursor-pointer pointer-events-none">
+          <label class="text-sm font-bold text-slate-700 leading-relaxed cursor-pointer pointer-events-none">
+              أقر بصحة المعلومات، وأتحمل المسؤولية في حال اكتشاف أي تلاعب، مع علمي بأنه لا يقبل التسجيل بمعدل أقل من 10.
+          </label>
+      </div>
+
+      <div class="mt-6 flex gap-3">
+        <button id="cancelBtn" class="btn-danger !w-1/3 !py-3.5 opacity-100 hidden" onclick="cancelEdit()">إلغاء</button>
+        <button id="submitBtn" class="btn-primary !py-3.5 opacity-50 cursor-not-allowed flex-1" onclick="submitForm()" disabled>تأكيد وتسجيل <i class="fa-solid fa-paper-plane"></i></button>
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // =========================================
+    // إعدادات وبيانات الخرائط (Dynamics)
+    // =========================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
+      authDomain: "databaseemploye.firebaseapp.com",
+      projectId: "databaseemploye",
+      storageBucket: "databaseemploye.firebasestorage.app",
+      messagingSenderId: "408231477466",
+      appId: "1:408231477466:web:e3bf5bd3eaca7cdcd3a5e3"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    
+    const scriptURL = "https://script.google.com/macros/s/AKfycbw8AxoVRAiqBQwMcdHrgfFdqlSyBNqpLbQ5RSH_DIczCJT2kaomH2HaW69-QM2RIlTW-Q/exec";
+    let systemConfig = { registrationOpen: false, iconVisible: true, destinations: [], levels: [], activeGradeType: "المعدل" };
+
+    const baladiyaMap = { 
+      "توقرت": ["توقرت", "النزلة", "تبسبست", "الزاوية العابدية"], 
+      "تماسين": ["تماسين", "بلدة عمر"], 
+      "المقارين": ["المقارين", "سيدي سليمان"], 
+      "الحجيرة": ["الحجيرة", "العالية"], 
+      "الطيبات": ["الطيبات", "المنقر", "ابن ناصر"] 
+    };
+    
+    const institutionsByDaaira = { "توقرت": { "متوسط": [{ name: "متوسطة سعد بن أبي وقاص تقرت", code: "551201" }, { name: "متوسطة الإمام علي توقرت", code: "551202" }, { name: "متوسطة محمد الأمين العمودي تقرت", code: "551203" }, { name: "متوسطة الشيخ المقراني تبسبست", code: "551204" }, { name: "متوسطة بن هدية المدني النزلة", code: "551205" }, { name: "متوسطة عبد الحميد بن باديس توقرت", code: "551206" }, { name: "متوسطة حمزة بن عبد المطلب الزاوية العابدية", code: "551207" }, { name: "متوسطة نصرات حشاني تبسبست", code: "551208" }, { name: "متوسطة عيسات ايدير البهجة تبسبست", code: "551209" }, { name: "متوسطة تجيني محمد عين الصحراء النزلة", code: "551210" }, { name: "متوسطة ابن رشد حي العرقوب توقرت", code: "551211" }, { name: "متوسطة رضا حوحو الزاوية العابدية", code: "551212" }, { name: "متوسطة ميعادي فخر الدين النزلة", code: "551213" }, { name: "متوسطة عطالي محمد الصغير سيدي مهدي النزلة", code: "551214" }, { name: "متوسطة محمد عمران بوليفة حي الرمال توقرت", code: "551215" }, { name: "متوسطة عبد المؤمن بن علي النزلة", code: "551216" }, { name: "متوسطة بن الزاوي علي تبسبست", code: "551217" }, { name: "متوسطة البشير الابراهيمي توقرت", code: "551218" }, { name: "متوسطة حي 5 جويلية الزاوية العابدية", code: "551219" }, { name: "متوسطة بن حيزية عبد الله عين الصحراء 1 النزلة", code: "551220" }, { name: "متوسطة بن قلية محمد الزاوية العابدية", code: "551221" }, { name: "متوسطة تمرني محمد توقرت", code: "551222" }, { name: "متوسطة شاوش محمد تبسبست", code: "551223" }, { name: "متوسطة المجاهد التجاني الصادق النزلة", code: "551224" }, { name: "متوسطة خروبي محمد لخضر النزلة", code: "551225" }, { name: "متوسطة المجاهد سبقاق العيد توقرت", code: "551226" }, { name: "متوسطة دقعة الطاهر تبسبست", code: "551227" }, { name: "متوسطة بدودة معمر بن علي النزلة", code: "551228" }, { name: "متوسطة داشر الحاج حي المستقبل توقرت", code: "551229" }, { name: "متوسطة المجاهد رواص محمد حي المستقبل توقرت", code: "551230" }, { name: "متوسطة المجاهد بوليفة م العيدحي المستقبل توقرت", code: "551231" }, { name: "متوسطة المجاهد عماري السايححي المستقبل توقرت", code: "551232" }], "ثانوي": [{ name: "ثانوية الأمير عبد القادر توقرت", code: "551101" }, { name: "ثانوية عبد الرحمان الكواكبي تبسبست", code: "551102" }, { name: "ثانوية الحسن بن الهيثم النزلة", code: "551103" }, { name: "ثانوية البشير الابراهيمي تبسبست", code: "551104" }, { name: "ثانوية هواري بومدين الزاوية العابدية", code: "551105" }, { name: "ثانوية أبو بكر بلقايد النزلة", code: "551106" }, { name: "ثانوية لزهاري تونسي الزاوية العابدية", code: "551107" }, { name: "ثانوية بوخاري عبد المالك النزلة", code: "551108" }, { name: "ثانوية عبودة علي -حي المستقبل - توقرت", code: "551109" }, { name: "ثانوية مسغوني م الصالح - حي المستقبل", code: "551110" }] }, "الحجيرة": { "متوسط": [{ name: "متوسطة ابن سينا الحجيرة", code: "552201" }, { name: "متوسطة لخضاري لخضر العالية", code: "552202" }, { name: "متوسطة زوابري مسعود لقراف الحجيرة", code: "552203" }, { name: "متوسطة السايح بن عيسى محمد السايح العالية", code: "552204" }, { name: "متوسطة بن شويحة حمزة الحجيرة", code: "552205" }, { name: "متوسطة شلغوم بشير الشقة -العالية-", code: "552206" }, { name: "المجاهد شعيب الأخضر الحجيرة", code: "552206" }], "ثانوي": [{ name: "ثانوية طارق بن زياد الحجيرة", code: "552101" }, { name: "ثانوية بساسي محمد الصغير العالية", code: "552102" }, { name: "ثانوية لحسيني محمد الحجيرة", code: "552103" }, { name: "ثانوية بالضياف محمد لقراف الحجيرة", code: "552104" }] }, "الطيبات": { "متوسط": [{ name: "متوسطة أحمد زبانة الطيبات", code: "553201" }, { name: "متوسطة موسى بن نصير المنقر", code: "553202" }, { name: "متوسطة طارق بن زياد بن ناصر", code: "553203" }, { name: "متوسطة نتاري محمد الدليلعي الطيبات", code: "553204" }, { name: "متوسطة العقون محمد الكبير الطيبات", code: "553205" }, { name: "متوسطة معمري محمد بن ناصر", code: "553206" }, { name: "متوسطة العيد زقرير المنقر", code: "553207" }, { name: "متوسطة بلعجال أحمد الخبنة الطيبات", code: "553208" }, { name: "متوسطة المجاهد الخذير أحمد المنقر", code: "553209" }, { name: "متوسطة المجاهد رابحي العيد المنقر", code: "553210" }, { name: "متوسطة المجاهد بكاري ع القادر دليليعي الطيبات", code: "553211" }], "ثانوي": [{ name: "ثانوية ابن رشيق القيرواني الطيبات", code: "553101" }, { name: "ثانوية المنقر - دقعة علي المنقر", code: "553102" }, { name: "ثانوية عبيد أحمد بن ناصر", code: "553103" }, { name: "ثانوية زقوني الصغير الدليليعي الطيبات", code: "553104" }] }, "المقارين": { "متوسط": [{ name: "متوسطة الفرابي المقارين", code: "554201" }, { name: "متوسطة طفحي مسعود سيدي سليمان", code: "554202" }, { name: "متوسطة بلحارث محمد السايح سيدي سليمان", code: "554203" }, { name: "متوسطة سوفي الهاشمي الطيبات", code: "554204" }, { name: "متوسطة الشهيد عبد الرحمان قوتال القصور المقارين", code: "554205" }, { name: "متوسطة الشهيد أحميدة بوحفص المقارين", code: "554206" }, { name: "متوسطة بركبية عبد الرزاق المقارين", code: "554207" }, { name: "متوسطة الشهيد تماسيني ع الرحمان لهريهيرة المقارين", code: "554208" }], "ثانوي": [{ name: "ثانوية خالد بن الوليد المقارين", code: "554101" }, { name: "ثانوية بن عمر النوي سيدي سليمان", code: "554102" }, { name: "ثانوية عميش سعدون المقارين", code: "554103" }] }, "تماسين": { "متوسط": [{ name: "متوسطة عمر بن الخطاب تماسين", code: "555201" }, { name: "متوسطة مولاتي محمد السايح بلدة عمر", code: "555202" }, { name: "متوسطة أبو بكر الرازي البحور تماسين", code: "555203" }, { name: "متوسطة قوني محمد الطيب سيدي عامر تماسين", code: "555204" }, { name: "متوسطة معركة قرداش بلدة عمر", code: "555205" }, { name: "متوسطة محمد الصديق بن يحي حي الكدية تماسين", code: "555206" }, { name: "متوسطة بركة عبد الرزاق قوق بلدة عمر", code: "555207" }, { name: "متوسطة بدودة السايح تملاحت تماسين", code: "555208" }, { name: "متوسطة ع ابن باديس قوق بلدة عمر", code: "555209" }], "ثانوي": [{ name: "ثانوية مفدي زكريا تماسين", code: "555101" }, { name: "ثانوية العيد بن الصحراوي بلدة عمر", code: "555102" }, { name: "ثانوية قويدري محمد العيد تماسين", code: "555103" }, { name: "ثانوية تجيني محمد لخضر بلدة عمر", code: "555104" }, { name: "ثانوية مالك بن نبي قوق", code: "555105" }] } };
+
+    let isEditMode = false;
+    let employeeData = null;
+    let registeredChildren = [];
+    let currentOriginalChildName = "";
+
+    // =========================================
+    // نظام الوصل 
+    // =========================================
+    const receiptBranding = {
+      logoUrl: "https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15",
+      govTitle: "الجمهورية الجزائرية الديمقراطية الشعبية",
+      ministry: "وزارة التربية الوطنية",
+      directorate: "مديرية التربية لولاية توقرت",
+      committee: "اللجنة الوطنية للخدمات الاجتماعية لعمال التربية",
+      service: "اللجنة الولائية للخدمات الإجتماعية لعمال التربية لولاية توقرت",
+      addressLine: "المقر: حي خميستي، توقرت",
+      contactLine: "الهاتف: 91 39 98 030       - البريد: cwostetggt55@gmail.com"
+    };
+
+    function escapeHtml(str){ return String(str || '').replace(/[&<>"'`=\/]/g, function(s){ return '&#' + s.charCodeAt(0) + ';'; }); }
+
+    function formatCleanDateTime(dateStr) {
+        if (!dateStr) return 'غير متوفر';
+        try {
+            let d = null;
+            if (typeof dateStr === 'object' && dateStr.seconds) { d = new Date(dateStr.seconds * 1000); } 
+            else if (typeof dateStr === 'string' && dateStr.includes('Timestamp')) { const match = dateStr.match(/seconds=(\d+)/); if (match && match[1]) d = new Date(parseInt(match[1]) * 1000); } 
+            else if (typeof dateStr === 'string' && dateStr.includes('ll')) { const parts = dateStr.split('ll'); if (parts.length === 2) return `${parts[1].trim()} ${parts[0].trim()}`; } 
+            else if (typeof dateStr === 'string' && /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}:\d{2}$/.test(dateStr.trim())) { const parts = dateStr.trim().split(' '); const dateParts = parts[0].split('-'); return `${dateParts[2]}-${dateParts[1]}-${dateParts[0]} ${parts[1]}`; } 
+            else { d = new Date(dateStr); }
+            if (d && !isNaN(d.getTime())) {
+                const yyyy = d.getFullYear(); const mm = String(d.getMonth() + 1).padStart(2, '0'); const dd = String(d.getDate()).padStart(2, '0');
+                const hh = String(d.getHours()).padStart(2, '0'); const min = String(d.getMinutes()).padStart(2, '0'); const ss = String(d.getSeconds()).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+            }
+        } catch(e) {}
+        return String(dateStr);
+    }
+
+    function prepareReceiptData(raw = {}, options = {}) {
+      const normalize = (value) => value === undefined || value === null ? "" : String(value).trim();
+      const data = {
+        empId: normalize(raw.empId),
+        parentName: normalize(raw.name),
+        phone: normalize(raw.personalPhone || raw.phone),
+        childName: normalize(raw.childFullName),
+        childBirthDate: normalize(raw.childBirthDate),
+        childLevel: normalize(raw.category || raw.childLevel),
+        schoolName: normalize(raw.schoolName),
+        childAge: normalize(raw.childAge), // القيمة المدمجة المحفوظة سابقاً
+        isOrphan: normalize(raw.isOrphan),
+        trip: normalize(raw.trip)
+      };
+      if (data.phone && data.phone.length === 10 && !data.phone.includes(' ')) {
+        let p = data.phone;
+        data.phone = p.slice(0, 2) + ' ' + p.slice(2, 4) + ' ' + p.slice(4, 6) + ' ' + p.slice(6, 8) + ' ' + p.slice(8, 10);
+      }
+      data.registrationDate = options.registrationDate || raw.date || raw.createdAt || new Date().toISOString();
+      data.modificationDate = options.modificationDate || raw.modificationDate || raw.updatedAt || "";
+      return data;
+    }
+
+    function renderReceiptTemplate(data = {}) {
+      const safe = (value) => escapeHtml(value || "-");
+      const registrationMoment = formatCleanDateTime(data.registrationDate);
+      const modificationMoment = data.modificationDate ? formatCleanDateTime(data.modificationDate) : "";
+      const modificationLine = modificationMoment ? `<div class="meta-item">آخر تعديل: ${safe(modificationMoment)}</div>` : "";
+
+      return `
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <title>وصل التسجيل - ${receiptBranding.service}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
+        body { margin: 0; padding: 25px; background: #f2f5fb; font-family: 'Cairo', sans-serif; color: #1d2752; }
+        .receipt-card { max-width: 820px; margin: 0 auto; background: #fff; border-radius: 18px; padding: 32px 36px; box-shadow: 0 20px 45px rgba(13, 55, 133, 0.15); border: 1px solid #e6ecff; }
+        .receipt-header { display: flex; gap: 22px; align-items: center; border-bottom: 2px solid #eef1ff; padding-bottom: 18px; margin-bottom: 20px; }
+        .receipt-logo { width: 110px; height: 110px; object-fit: contain; }
+        .receipt-title h1 { font-size: 20px; margin: 6px 0 2px; color: #172042; }
+        .receipt-title h2 { font-size: 18px; margin: 0; color: #4357c8; }
+        .receipt-title p { margin: 2px 0; font-size: 14px; color: #4d5c84; }
+        .receipt-subtitle { text-align: center; font-size: 22px; margin-bottom: 15px; color: #23326b; }
+        .meta { display: flex; flex-wrap: wrap; gap: 12px; background: #f5f7ff; border: 1px solid #dfe6ff; border-radius: 12px; padding: 14px; margin-bottom: 18px; }
+        .meta-item { flex: 1; min-width: 180px; font-size: 14px; font-weight: 600; color: #1e2d58; }
+        table { width: 100%; border-collapse: collapse; page-break-inside: avoid; margin-bottom: 15px; }
+        table td { padding: 10px 0; border-bottom: 1px dashed #d9def0; font-size: 15px; }
+        table td.label { color: #5b6592; width: 38%; font-weight: 600; }
+        table tr:last-child td { border-bottom: none; }
+        .section-heading { background: #eef1ff; padding: 8px 15px; border-radius: 8px; color: #172042; font-weight: 700; margin-bottom: 10px; }
+        .print-hint { text-align: center; margin-top: 25px; font-size: 14px; color: #4c5a88; }
+        .print-btn { margin-top: 12px; background: linear-gradient(45deg, #6a11cb, #2575fc); border: none; padding: 12px 24px; border-radius: 10px; color: #fff; font-size: 15px; cursor: pointer; font-family: 'Cairo', sans-serif; }
+        @media print {
+          body { margin: 0; padding: 10px; background: #fff; }
+          .receipt-card { max-width: 100%; margin: 0; padding: 15px 20px; box-shadow: none; border: none; }
+          .receipt-header { gap: 15px; padding-bottom: 12px; margin-bottom: 12px; }
+          .receipt-logo { width: 80px; height: 80px; }
+          .receipt-title h1 { font-size: 16px; margin: 4px 0 1px; }
+          .receipt-title h2 { font-size: 14px; }
+          .receipt-title p { margin: 1px 0; font-size: 11px; }
+          .receipt-subtitle { font-size: 18px; margin-bottom: 10px; }
+          .meta { gap: 8px; padding: 10px; margin-bottom: 12px; }
+          .meta-item { font-size: 12px; min-width: 150px; }
+          table td { padding: 6px 0; font-size: 13px; }
+          table td.label { width: 35%; }
+          .print-hint, .print-btn { display: none; }
+          @page { size: A4; margin: 0.5cm; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-card">
+        <div class="receipt-header">
+          <img src="${receiptBranding.logoUrl}" alt="شعار اللجنة" class="receipt-logo">
+          <div class="receipt-title">
+            <p>${receiptBranding.govTitle}</p>
+            <p>${receiptBranding.ministry}</p>
+            <p>${receiptBranding.directorate}</p>
+            <h1>${receiptBranding.committee}</h1>
+            <h2>${receiptBranding.service}</h2>
+            <p>${receiptBranding.addressLine}</p>
+            <p>${receiptBranding.contactLine}</p>
+          </div>
+        </div>
+        <h3 class="receipt-subtitle">وصل تسجيل - رحلات أبناء القطاع</h3>
+        <div class="meta">
+          <div class="meta-item">تاريخ التسجيل: ${safe(registrationMoment)}</div>
+          ${modificationLine}
+        </div>
+        
+        <div class="section-heading">بيانات ولي الأمر (الموظف)</div>
+        <table>
+          <tbody>
+            <tr><td class="label">الاسم واللقب</td><td>${safe(data.parentName)}</td></tr>
+            <tr><td class="label">الرقم الوظيفي</td><td>${safe(data.empId)}</td></tr>
+            <tr><td class="label">رقم الهاتف</td><td style="direction:ltr;unicode-bidi:bidi-override;text-align:right;">${safe(data.phone)}</td></tr>
+          </tbody>
+        </table>
+
+        <div class="section-heading">بيانات المشارك (الابن / الابنة)</div>
+        <table>
+          <tbody>
+            <tr><td class="label">الاسم واللقب</td><td>${safe(data.childName)}</td></tr>
+            <tr><td class="label">تاريخ الميلاد</td><td dir="ltr" style="text-align:right;">${safe(data.childBirthDate)}</td></tr>
+            <tr><td class="label">الحالة (يتيم)</td><td>${safe(data.isOrphan)}</td></tr>
+            <tr><td class="label">الطور والمؤسسة</td><td>${safe(data.childLevel)} - ${safe(data.schoolName)}</td></tr>
+            <tr><td class="label">المعدل المعتمد</td><td style="font-weight:900; color:#059669;">${safe(data.childAge)}</td></tr>
+            <tr><td class="label">وجهة الرحلة</td><td style="font-weight:900; color:#1976d2;">${safe(data.trip)}</td></tr>
+          </tbody>
+        </table>
+
+        <div class="print-hint">
+          يمكن طباعة الوصل أو حفظه بصيغة PDF عبر زر الطباعة في الأسفل.
+          <br>
+          <button class="print-btn" onclick="window.print()">طباعة الوصل</button>
+        </div>
+      </div>
+    </body>
+    </html>
+    `;
+    }
+
+    function openReceiptPreview(rawData, options) {
+      const normalizedData = prepareReceiptData(rawData, options);
+      const receiptHTML = renderReceiptTemplate(normalizedData);
+      const receiptWindow = window.open("", "_blank");
+      if (!receiptWindow) { Swal.fire("تنبيه", "يرجى السماح بفتح النوافذ المنبثقة لتحميل الوصل", "warning"); return; }
+      receiptWindow.document.open();
+      receiptWindow.document.write(receiptHTML);
+      receiptWindow.document.close();
+      receiptWindow.focus();
+    }
+
+    // =========================================
+    // دوال التحقق والبدء
+    // =========================================
+    document.addEventListener("DOMContentLoaded", () => {
+        checkRegistrationStatus();
+    });
+
+   async function checkRegistrationStatus() {
+        Swal.fire({ title: 'جاري جلب بيانات النظام...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const docRef = await db.collection("config_cwoste").doc("abnaa_rahalate").get();
+            if (docRef.exists) {
+                systemConfig = docRef.data();
+                
+                // 🌟 الأسطر الجديدة لضمان قراءة إعدادات التسجيل المتعدد 🌟
+                if(systemConfig.multipleRegistration === undefined) systemConfig.multipleRegistration = false;
+                if(systemConfig.maxChildren === undefined) systemConfig.maxChildren = 1;
+
+                if (systemConfig.registrationOpen === false) {
+                    Swal.fire({ icon: 'warning', title: 'التسجيل مغلق', text: 'عذراً، فترة التسجيل في رحلات أبناء القطاع مغلقة حالياً.', confirmButtonText: 'عودة', allowOutsideClick: false }).then(() => { window.location.href = 'employee_dashboard.html'; });
+                    return;
+                }
+                
+                // ملء القوائم الديناميكية
+                const tripSelect = document.getElementById('tripField');
+                tripSelect.innerHTML = '<option value="">-- اختر الرحلة --</option>';
+                (systemConfig.destinations || ["الجزائر العاصمة"]).forEach(d => tripSelect.innerHTML += `<option value="${d}">${d}</option>`);
+
+                const catSelect = document.getElementById('categoryField');
+                catSelect.innerHTML = '<option value="">-- اختر المستوى --</option>';
+                (systemConfig.levels || ["رابعة متوسط", "ثالثة ثانوي"]).forEach(l => catSelect.innerHTML += `<option value="${l}">${l}</option>`);
+
+                // تحديد عنوان المعدل النشط
+                const activeGrade = systemConfig.activeGradeType || 'المعدل';
+                document.getElementById('gradeLabel').innerText = `${activeGrade} (من 10 إلى 20)`;
+
+                authenticateUser(); 
+            } else {
+                authenticateUser();
+            }
+        } catch (error) {
+            Swal.fire('خطأ', 'تعذر الاتصال بالنظام.', 'error').then(() => window.location.href = 'employee_dashboard.html');
+        }
+    }
+
+    async function authenticateUser() {
+        const token = localStorage.getItem('cwoste_auth_token') || sessionStorage.getItem('cwoste_auth_token');
+        const role = localStorage.getItem('cwoste_auth_role') || sessionStorage.getItem('cwoste_auth_role');
+
+        if (!token || role !== 'Employee') {
+            window.location.href = 'auth_system.html';
+            return;
+        }
+
+        try {
+            const querySnap = await db.collection('compte_cwoste').doc('employee_accounts').collection('users').where('ccp', '==', token).limit(1).get();
+            if (querySnap.empty) {
+                window.location.href = 'auth_system.html';
+                return;
+            }
+            employeeData = querySnap.docs[0].data();
+
+            if(!employeeData.workDistrict || !employeeData.workMunicipality || !employeeData.phone) {
+                Swal.fire({ icon: 'warning', title: 'بيانات غير مكتملة', text: 'يرجى إكمال بيانات دائرة وبلدية العمل ورقم الهاتف في ملفك الشخصي أولاً.', confirmButtonText: 'الذهاب للملف الشخصي', allowOutsideClick: false }).then(() => { window.location.href = 'employee_dashboard.html'; });
+                return;
+            }
+
+            checkPreviousRegistration(employeeData.empId);
+
+        } catch (error) {
+            Swal.fire('خطأ', 'فشل تحميل بيانات الحساب.', 'error').then(() => window.location.href = 'employee_dashboard.html');
+        }
+    }
+
+    async function checkPreviousRegistration(empId) {
+
+        document.getElementById('existingContainer').classList.add('hidden');
+        document.getElementById('formContainer').classList.add('hidden');
+
+        Swal.fire({ title: 'جاري التحقق من سجلاتك...', text: 'لحظات من فضلك', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        try {
+            const beneficiaryParams = new URLSearchParams();
+            beneficiaryParams.append("action", "check_previous_beneficiary");
+            beneficiaryParams.append("empId", empId);
+            beneficiaryParams.append("loanType", "exceptional");
+
+            try {
+                const beneficiaryRes = await fetch(scriptURL, { method: "POST", body: beneficiaryParams });
+                const beneficiaryResult = await beneficiaryRes.json();
+                if (beneficiaryResult.result === "previous_beneficiary") {
+                    Swal.fire({
+                        title: "⚠️ لا يمكنك التسجيل",
+                        html: `أنت مستفيد(ة) من الرحلات السابقة.<br>لا يحقّ للموظف الذي استفاد من رحلات الخدمات الاجتماعية خلال السنة نفسها إعادة التسجيل في البرنامج مرة أخرى.`,
+                        icon: "error", confirmButtonText: "عودة", allowOutsideClick: false
+                    }).then(() => { window.location.href = 'employee_dashboard.html'; });
+                    return;
+                }
+            } catch(e) {} 
+
+            const params = new URLSearchParams();
+            params.append("action", "check_existing");
+            params.append("empId", empId);
+            params.append("loanType", "exceptional"); 
+
+            const res = await fetch(scriptURL, { method: "POST", body: params });
+            const result = await res.json();
+
+            Swal.close();
+
+            if (result.result === "exists" && result.data) {
+                registeredChildren = Array.isArray(result.data) ? result.data : [result.data];
+                showExistingMenu();
+            } else {
+                showRegistrationForm();
+            }
+        } catch (error) {
+            Swal.close();
+            Swal.fire('خطأ بالخادم', 'تعذر التحقق من سجلاتك. حاول لاحقاً.', 'error').then(() => window.location.href = 'employee_dashboard.html');
+        }
+    }
+
+    // =========================================
+    // واجهات المستخدم (UI)
+    // =========================================
+  function showExistingMenu() {
+        document.getElementById('formContainer').classList.add('hidden');
+        document.getElementById('existingContainer').classList.remove('hidden');
+        
+        const listContainer = document.getElementById('childrenListContainer');
+        listContainer.innerHTML = registeredChildren.map((child, index) => `
+            <div class="child-card border-primary/20">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-black text-primaryDark text-lg"><i class="fa-solid fa-user-graduate text-accent ml-2"></i>${escapeHtml(child.childFullName)}</h3>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full border border-emerald-200">مسجل بنجاح</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm text-slate-600 mb-4">
+                    <p><b>الطور:</b> ${escapeHtml(child.category || child.childLevel)}</p>
+                    <p><b>المعدل:</b> ${escapeHtml(child.childAge)}</p>
+                    <p><b>الوجهة:</b> <span class="text-primary font-bold">${escapeHtml(child.trip)}</span></p>
+                    <p><b>المؤسسة:</b> ${escapeHtml(child.schoolName)}</p>
+                    <p dir="ltr" class="text-right col-span-2 text-xs"><b>تاريخ التسجيل:</b> ${formatCleanDateTime(child.date || child.createdAt)}</p>
+                </div>
+                <div class="flex flex-wrap gap-2 pt-3 border-t border-slate-200">
+                    <button onclick='downloadChildReceipt(${index})' class="btn-info !w-auto flex-1 !py-2"><i class="fa-solid fa-print"></i> الوصل</button>
+                    <button onclick='editSpecificChild(${index})' class="btn-warning !w-auto flex-1 !py-2"><i class="fa-solid fa-pen"></i> تعديل</button>
+                    <button onclick='deleteChild("${escapeHtml(child.childFullName)}")' class="btn-danger !w-auto flex-1 !py-2"><i class="fa-solid fa-trash"></i> حذف</button>
+                </div>
+            </div>
+        `).join('');
+
+        // 🌟 التحكم في إظهار زر "تسجيل مشارك آخر" بناءً على الإعدادات 🌟
+        const maxAllowed = systemConfig.multipleRegistration ? systemConfig.maxChildren : 1;
+        const addBtn = document.getElementById('btnAddNewChild');
+        if (addBtn) {
+            if (registeredChildren.length >= maxAllowed) {
+                addBtn.style.display = 'none'; // إخفاء الزر إذا وصل للحد الأقصى
+            } else {
+                addBtn.style.display = 'inline-flex'; // إظهار الزر إذا كان هناك مجال
+            }
+        }
+    }
+
+    function downloadChildReceipt(index) {
+        const childData = registeredChildren[index];
+        const combinedData = {
+            empId: employeeData.empId,
+            name: employeeData.name,
+            phone: employeeData.phone,
+            ...childData
+        };
+        openReceiptPreview(combinedData, { actionSource: "استخراج التسجيل السابق" });
+    }
+
+    function editSpecificChild(index) {
+        const childData = registeredChildren[index];
+        currentOriginalChildName = childData.childFullName;
+        showRegistrationForm(true, childData);
+    }
+
+function showRegistrationForm(isUpdate = false, childData = null) {
+    isEditMode = isUpdate;
+    document.getElementById('existingContainer').classList.add('hidden');
+    document.getElementById('formContainer').classList.remove('hidden');
+    
+    document.getElementById('formTitle').textContent = isEditMode ? 'تحديث بيانات المشارك' : 'استمارة تسجيل رحلات أبناء القطاع';
+    
+    const btn = document.getElementById('submitBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const topBar = document.getElementById('formTopBar');
+    
+    if(isEditMode) {
+        btn.innerHTML = 'حفظ التحديثات <i class="fa-solid fa-floppy-disk"></i>';
+        btn.classList.replace('btn-primary', 'btn-success');
+        topBar.className = "absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-600 via-green-500 to-teal-400";
+        cancelBtn.classList.remove('hidden');
+    } else {
+        btn.innerHTML = 'تأكيد وتسجيل المشارك <i class="fa-solid fa-paper-plane"></i>';
+        btn.classList.replace('btn-success', 'btn-primary');
+        topBar.className = "absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primaryDark via-primary to-accent";
+        if (registeredChildren.length > 0) cancelBtn.classList.remove('hidden'); 
+        else cancelBtn.classList.add('hidden');
+    }
+
+    // تعبئة بيانات الموظف 
+    document.getElementById('regEmpId').value = employeeData.empId || '';
+    document.getElementById('regName').value = employeeData.name || '';
+    document.getElementById('regGrade').value = employeeData.grade || '';
+    document.getElementById('regPlace').value = employeeData.workplace || '';
+    document.getElementById('regDaira').value = employeeData.workDistrict || '';
+    document.getElementById('regBaladiya').value = employeeData.workMunicipality || '';
+    let p = String(employeeData.phone || '');
+    if (p.length === 10 && !p.includes(' ')) p = p.slice(0, 2) + ' ' + p.slice(2, 4) + ' ' + p.slice(4, 6) + ' ' + p.slice(6, 8) + ' ' + p.slice(8, 10);
+    document.getElementById('regPhone').value = p;
+
+    populateDateSelects();
+    initChildSelects();
+
+    // تفريغ وتجهيز الحقول
+    document.getElementById('childFullNameField').value = '';
+    document.getElementById('childAgeField').value = ''; 
+    document.getElementById('childDaairaField').value = '';
+    document.getElementById('childBaladiyaField').innerHTML = '<option value="">-- اختر البلدية --</option>';
+    document.getElementById('childSchoolField').innerHTML = '<option value="">-- اختر المؤسسة --</option>';
+    document.getElementById('categoryField').value = ''; 
+    document.getElementById('isOrphanField').value = 'لا';
+    document.getElementById('tripField').value = '';
+    document.getElementById('childBirthDateField').value = '';
+    document.getElementById('childYear').value = '';
+    document.getElementById('childMonth').value = '';
+    document.getElementById('childDay').value = '';
+
+    if (isEditMode && childData) {
+        document.getElementById('childFullNameField').value = childData.childFullName || '';
+        document.getElementById('isOrphanField').value = childData.isOrphan || 'لا';
+        
+        // فصل الرقم عن النص في المعدل
+        let rawGrade = childData.childAge || "";
+        let gValue = rawGrade;
+        const match = String(rawGrade).match(/^([\d.]+)\s*(?:\((.*)\))?$/);
+        if(match) { gValue = match[1]; }
+        document.getElementById('childAgeField').value = gValue;
+
+        if(childData.childBirthDate) setDateSelects(childData.childBirthDate, 'child');
+        
+        // 1. تحديد المستوى أولاً (مع إزالة المسافات الزائدة)
+        let levelVal = (childData.category || childData.childLevel || "").trim();
+        if (levelVal) {
+            let catField = document.getElementById('categoryField');
+            if (!Array.from(catField.options).some(o => o.value === levelVal)) {
+                catField.innerHTML += `<option value="${levelVal}">${levelVal}</option>`;
+            }
+            catField.value = levelVal;
+        }
+
+        // 2. تحديد الدائرة (مع إزالة المسافات الزائدة)
+        let daairaVal = (childData.childDaaira || "").trim();
+        if (daairaVal) {
+            let dField = document.getElementById('childDaairaField');
+            if (!Array.from(dField.options).some(o => o.value === daairaVal)) {
+                dField.innerHTML += `<option value="${daairaVal}">${daairaVal}</option>`;
+            }
+            dField.value = daairaVal;
+            
+            // 🌟 3. بناء وتجهيز قوائم البلدية والمؤسسات بشكل فوري (بدون تأخير) 🌟
+            onChildDaairaChange();
+
+            // 🌟 4. تحديد البلدية مباشرة (مع استثناء الخيار الفارغ) 🌟
+            let baladiyaVal = (childData.childBaladiya || "").trim();
+            if (baladiyaVal) {
+                let bField = document.getElementById('childBaladiyaField');
+                let bMatched = Array.from(bField.options).find(o => 
+                    o.value !== "" && (o.value === baladiyaVal || o.value.includes(baladiyaVal) || baladiyaVal.includes(o.value))
+                );
+                
+                if (bMatched) {
+                    bField.value = bMatched.value;
+                } else {
+                    bField.innerHTML += `<option value="${baladiyaVal}">${baladiyaVal}</option>`;
+                    bField.value = baladiyaVal;
+                }
+            }
+
+            // 🌟 5. تحديد المؤسسة مباشرة (مع استثناء الخيار الفارغ) 🌟
+            let schoolVal = (childData.schoolName || "").trim();
+            if (schoolVal) {
+                let sField = document.getElementById('childSchoolField');
+                let matchedOption = Array.from(sField.options).find(o => 
+                    o.value !== "" && (o.value === schoolVal || o.value.includes(schoolVal) || schoolVal.includes(o.value))
+                );
+                
+                if (matchedOption) {
+                    sField.value = matchedOption.value;
+                } else {
+                    sField.innerHTML += `<option value="${schoolVal}">${schoolVal}</option>`;
+                    sField.value = schoolVal;
+                }
+            }
+        }
+
+        if(childData.trip) {
+            let tField = document.getElementById('tripField');
+            if (!Array.from(tField.options).some(o => o.value === childData.trip)) {
+                tField.innerHTML += `<option value="${childData.trip}">${childData.trip}</option>`;
+            }
+            tField.value = childData.trip;
+        }
+    }
+
+    const ackCheck = document.getElementById('ackCheck');
+    ackCheck.checked = false;
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+}
+
+    function cancelEdit() {
+        if (registeredChildren.length > 0) {
+            showExistingMenu();
+        } else {
+            window.location.href = 'employee_dashboard.html';
+        }
+    }
+
+    function toggleAck() {
+        const check = document.getElementById('ackCheck');
+        const btn = document.getElementById('submitBtn');
+        check.checked = !check.checked;
+        if (check.checked) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    function validateArabicOnly(input) { input.value = input.value.replace(/[^\u0600-\u06FF\s]/g, ''); }
+
+    function populateDateSelects() {
+        const monthsNames = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+        let monthsHtml = '<option value="">الشهر</option>';
+        monthsNames.forEach((m, i) => { monthsHtml += `<option value="${(i+1).toString().padStart(2,'0')}">${m}</option>`; });
+        let yearsHtml = '<option value="">السنة</option>';
+        for(let i = 2026; i >= 2005; i--) { yearsHtml += `<option value="${i}">${i}</option>`; } 
+
+        document.getElementById('childMonth').innerHTML = monthsHtml;
+        document.getElementById('childYear').innerHTML = yearsHtml;
+        updateDays('child');
+    }
+
+    function updateDays(type) {
+        const yearSelect = document.getElementById(type + 'Year');
+        const monthSelect = document.getElementById(type + 'Month');
+        const daySelect = document.getElementById(type + 'Day');
+        const selectedYear = parseInt(yearSelect.value) || 2024;
+        const selectedMonth = parseInt(monthSelect.value) || 1;
+        const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+        const currentDay = daySelect.value;
+        
+        daySelect.innerHTML = '<option value="">اليوم</option>';
+        for (let d = 1; d <= daysInMonth; d++) {
+            let val = d.toString().padStart(2, '0');
+            daySelect.innerHTML += `<option value="${val}">${val}</option>`;
+        }
+        if (currentDay && currentDay <= daysInMonth) daySelect.value = currentDay;
+        updateHiddenDate(type);
+    }
+
+    function updateHiddenDate(type) {
+        const y = document.getElementById(type + 'Year').value;
+        const m = document.getElementById(type + 'Month').value;
+        const d = document.getElementById(type + 'Day').value;
+        let hiddenField = document.getElementById('childBirthDateField');
+        if (y && m && d) { hiddenField.value = `${d}-${m}-${y}`; } else { hiddenField.value = ""; }
+    }
+
+    function setDateSelects(dateStr, type) {
+        if(!dateStr) return;
+        let parts = dateStr.split('-');
+        if(parts.length === 3) {
+            if(parts[0].length === 4) { 
+                document.getElementById(type + 'Year').value = parts[0]; document.getElementById(type + 'Month').value = parts[1]; updateDays(type); document.getElementById(type + 'Day').value = parts[2];
+            } else if(parts[2].length === 4) { 
+                document.getElementById(type + 'Day').value = parts[0]; document.getElementById(type + 'Month').value = parts[1]; document.getElementById(type + 'Year').value = parts[2]; updateDays(type); document.getElementById(type + 'Day').value = parts[0];
+            }
+            updateHiddenDate(type);
+        }
+    }
+
+    function initChildSelects() {
+        const daairaSelect = document.getElementById("childDaairaField");
+        daairaSelect.innerHTML = '<option value="">-- اختر الدائرة --</option>';
+        Object.keys(baladiyaMap).forEach(d => {
+            daairaSelect.innerHTML += `<option value="${d}">${d}</option>`;
+        });
+    }
+
+    function onChildLevelChange() {
+        const daaira = document.getElementById("childDaairaField").value;
+        if(daaira) onChildDaairaChange();
+    }
+
+function onChildDaairaChange() {
+        const daaira = document.getElementById("childDaairaField").value;
+        const level = document.getElementById("categoryField").value || "";
+        const baladiyaSelect = document.getElementById("childBaladiyaField");
+        const schoolSelect = document.getElementById("childSchoolField");
+
+        // 1. ملء البلديات
+        baladiyaSelect.innerHTML = '<option value="">-- اختر البلدية --</option>';
+        if (daaira && baladiyaMap[daaira]) {
+            baladiyaMap[daaira].forEach(b => { 
+                baladiyaSelect.innerHTML += `<option value="${b}">${b}</option>`; 
+            });
+        }
+
+        // 2. ملء المؤسسات
+        schoolSelect.innerHTML = '<option value="">-- اختر المؤسسة --</option>';
+        if (daaira) {
+            let mappedLevel = "";
+            if (level.includes("متوسط")) mappedLevel = "متوسط";
+            else if (level.includes("ثانوي")) mappedLevel = "ثانوي";
+            else if (level.includes("ابتدائي")) mappedLevel = "ابتدائي";
+
+            // دعم كلتا الصيغتين (النصوص العادية، أو الكائنات التي تحتوي على name)
+            const mapObj = window.institutionsByDaaira || {}; 
+            
+            if (mappedLevel && mapObj[daaira] && mapObj[daaira][mappedLevel]) {
+                mapObj[daaira][mappedLevel].forEach(s => { 
+                    let sName = typeof s === 'object' ? s.name : s;
+                    schoolSelect.innerHTML += `<option value="${sName}">${sName}</option>`; 
+                });
+            } else if (mapObj[daaira]) {
+                for (const lvl in mapObj[daaira]) {
+                    mapObj[daaira][lvl].forEach(s => { 
+                        let sName = typeof s === 'object' ? s.name : s;
+                        schoolSelect.innerHTML += `<option value="${sName}">${sName}</option>`; 
+                    });
+                }
+            }
+        }
+    }
+
+    // =========================================
+    // الإرسال والحذف
+    // =========================================
+    async function submitForm() {
+        const btn = document.getElementById('submitBtn');
+        const orgText = btn.innerHTML;
+        btn.innerHTML = 'جاري الإرسال... <i class="fa-solid fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+
+        const getVal = (id) => document.getElementById(id) ? document.getElementById(id).value.trim() : "";
+        
+        const childName = getVal("childFullNameField");
+        const childDate = getVal("childBirthDateField"); 
+        const gradeValue = getVal("childAgeField");
+        const category = getVal("categoryField"); 
+        const childDaaira = getVal("childDaairaField");
+        const childBaladiya = getVal("childBaladiyaField");
+        const schoolName = getVal("childSchoolField");
+        const isOrphan = getVal("isOrphanField");
+        const trip = getVal("tripField");
+
+        if(!childName || !childDate || !category || !childDaaira || !childBaladiya || !schoolName || !trip || !gradeValue) {
+            Swal.fire({ icon: 'warning', title: 'تنبيه', text: 'جميع الحقول إجبارية.', confirmButtonText: 'موافق' });
+            btn.innerHTML = orgText;
+            btn.disabled = false;
+            return;
+        }
+
+        const averageValue = parseFloat(gradeValue);
+        if (isNaN(averageValue) || averageValue < 10 || averageValue > 20) {
+            Swal.fire({ icon: "warning", title: "تنبيه", text: "يرجى إدخال معدل صحيح بين 10 و 20." });
+            btn.innerHTML = orgText;
+            btn.disabled = false;
+            return;
+        }
+
+        // 🌟 دمج المعدل مع النوع النشط من قاعدة البيانات مباشرة 🌟
+        const activeType = systemConfig.activeGradeType || 'المعدل';
+        const combinedGrade = `${gradeValue} (${activeType})`;
+
+        let cleanPhone = String(employeeData.phone || '').replace(/\D/g, '').slice(0, 10);
+        let spacedPhone = cleanPhone.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+
+        const params = new URLSearchParams();
+        params.append("action", isEditMode ? "update" : "register");
+        params.append("loanType", "exceptional"); 
+        params.append("empId", employeeData.empId);
+        params.append("name", employeeData.name);
+        params.append("grade", employeeData.grade);
+        params.append("place", employeeData.workplace);
+        params.append("daira", employeeData.workDistrict);     
+        params.append("baladiya", employeeData.workMunicipality); 
+        params.append("personalPhone", spacedPhone);
+        
+        params.append("childFullName", childName);
+        params.append("childBirthDate", childDate);
+        params.append("childAge", combinedGrade); 
+        params.append("category", category); 
+        params.append("schoolName", schoolName); 
+        params.append("childDaaira", childDaaira); 
+        params.append("childBaladiya", childBaladiya);
+        params.append("isOrphan", isOrphan);
+        params.append("trip", trip); 
+
+        let modDateStr = "";
+        if (isEditMode) {
+            const now = new Date();
+            modDateStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')} ll ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            params.append("modificationDate", modDateStr);
+            params.append("originalChildFullName", currentOriginalChildName);
+        }
+
+        try {
+            const res = await fetch(scriptURL, { method: "POST", body: params });
+            const data = await res.json();
+
+            if (data.result === "success") {
+                document.getElementById('formContainer').classList.add('hidden');
+
+                let regDateToUse = new Date().toISOString();
+                if (isEditMode) {
+                    const oldRec = registeredChildren.find(c => c.childFullName === currentOriginalChildName);
+                    if (oldRec) regDateToUse = oldRec.date || oldRec.createdAt || regDateToUse;
+                } else {
+                    regDateToUse = data.date || regDateToUse;
+                }
+
+                const submittedData = {
+                    empId: employeeData.empId,
+                    name: employeeData.name,
+                    phone: spacedPhone,
+                    childFullName: childName,
+                    childBirthDate: childDate,
+                    category: category,
+                    schoolName: schoolName,
+                    childAge: combinedGrade,
+                    isOrphan: isOrphan,
+                    trip: trip,
+                    date: regDateToUse,
+                    modificationDate: isEditMode ? modDateStr : ""
+                };
+
+                Swal.fire({
+                    icon: "success", title: isEditMode ? "تم التحديث" : "تم التسجيل بنجاح",
+                    html: `
+                        <p class="mb-4 text-sm text-slate-600">تم حفظ بيانات المشارك (${escapeHtml(childName)}) لدى اللجنة بنجاح.</p>
+                        <button type="button" id="successReceiptBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+                            تحميل وصل التسجيل <i class="fa-solid fa-print"></i>
+                        </button>
+                    `,
+                    confirmButtonText: "العودة للقائمة",
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        document.getElementById('successReceiptBtn').addEventListener('click', () => {
+                            openReceiptPreview(submittedData, { actionSource: isEditMode ? "تحديث التسجيل" : "تسجيل جديد" });
+                        });
+                    }
+                }).then(() => checkPreviousRegistration(employeeData.empId)); 
+            } else {
+                throw new Error(data.message || 'حدث خطأ غير متوقع.');
+            }
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'فشل الإرسال', text: err.message });
+            btn.innerHTML = orgText;
+            btn.disabled = false;
+        }
+    }
+
+    async function deleteChild(childName) {
+        Swal.fire({
+            title: "⚠️ تأكيد الحذف", text: `هل أنت متأكد من سحب تسجيل الابن "${childName}" من الرحلات؟`, 
+            icon: "warning", showCancelButton: true, confirmButtonText: "نعم، احذف", cancelButtonText: "تراجع", confirmButtonColor: "#dc3545"
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'جاري الإلغاء...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                try {
+                    const params = new URLSearchParams();
+                    params.append("action", "delete");
+                    params.append("empId", employeeData.empId);
+                    params.append("loanType", "exceptional");
+                    params.append("childFullName", childName);
+
+                    const res = await fetch(scriptURL, { method: "POST", body: params });
+                    const data = await res.json();
+
+                    if (data.result === "success") {
+
+                    document.getElementById('existingContainer').classList.add('hidden');
+                    document.getElementById('formContainer').classList.add('hidden');
+
+                        Swal.fire({ icon: 'success', title: 'تم الحذف', text: 'تم سحب التسجيل بنجاح.', confirmButtonText: 'العودة' }).then(() => checkPreviousRegistration(employeeData.empId));
+                    } else {
+                        throw new Error(data.message);
+                    }
+                } catch (error) {
+                    Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل الحذف.' });
+                }
+            }
+        });
+    }
+
+    // المصفوفة الاحتياطية
+    window.institutionsByDaaira = { "توقرت": { "متوسط": [{ name: "متوسطة سعد بن أبي وقاص تقرت", code: "551201" }, { name: "متوسطة الإمام علي توقرت", code: "551202" }, { name: "متوسطة محمد الأمين العمودي تقرت", code: "551203" }, { name: "متوسطة الشيخ المقراني تبسبست", code: "551204" }, { name: "متوسطة بن هدية المدني النزلة", code: "551205" }, { name: "متوسطة عبد الحميد بن باديس توقرت", code: "551206" }, { name: "متوسطة حمزة بن عبد المطلب الزاوية العابدية", code: "551207" }, { name: "متوسطة نصرات حشاني تبسبست", code: "551208" }, { name: "متوسطة عيسات ايدير البهجة تبسبست", code: "551209" }, { name: "متوسطة تجيني محمد عين الصحراء النزلة", code: "551210" }, { name: "متوسطة ابن رشد حي العرقوب توقرت", code: "551211" }, { name: "متوسطة رضا حوحو الزاوية العابدية", code: "551212" }, { name: "متوسطة ميعادي فخر الدين النزلة", code: "551213" }, { name: "متوسطة عطالي محمد الصغير سيدي مهدي النزلة", code: "551214" }, { name: "متوسطة محمد عمران بوليفة حي الرمال توقرت", code: "551215" }, { name: "متوسطة عبد المؤمن بن علي النزلة", code: "551216" }, { name: "متوسطة بن الزاوي علي تبسبست", code: "551217" }, { name: "متوسطة البشير الابراهيمي توقرت", code: "551218" }, { name: "متوسطة حي 5 جويلية الزاوية العابدية", code: "551219" }, { name: "متوسطة بن حيزية عبد الله عين الصحراء 1 النزلة", code: "551220" }, { name: "متوسطة بن قلية محمد الزاوية العابدية", code: "551221" }, { name: "متوسطة تمرني محمد توقرت", code: "551222" }, { name: "متوسطة شاوش محمد تبسبست", code: "551223" }, { name: "متوسطة المجاهد التجاني الصادق النزلة", code: "551224" }, { name: "متوسطة خروبي محمد لخضر النزلة", code: "551225" }, { name: "متوسطة المجاهد سبقاق العيد توقرت", code: "551226" }, { name: "متوسطة دقعة الطاهر تبسبست", code: "551227" }, { name: "متوسطة بدودة معمر بن علي النزلة", code: "551228" }, { name: "متوسطة داشر الحاج حي المستقبل توقرت", code: "551229" }, { name: "متوسطة المجاهد رواص محمد حي المستقبل توقرت", code: "551230" }, { name: "متوسطة المجاهد بوليفة م العيدحي المستقبل توقرت", code: "551231" }, { name: "متوسطة المجاهد عماري السايححي المستقبل توقرت", code: "551232" }], "ثانوي": [{ name: "ثانوية الأمير عبد القادر توقرت", code: "551101" }, { name: "ثانوية عبد الرحمان الكواكبي تبسبست", code: "551102" }, { name: "ثانوية الحسن بن الهيثم النزلة", code: "551103" }, { name: "ثانوية البشير الابراهيمي تبسبست", code: "551104" }, { name: "ثانوية هواري بومدين الزاوية العابدية", code: "551105" }, { name: "ثانوية أبو بكر بلقايد النزلة", code: "551106" }, { name: "ثانوية لزهاري تونسي الزاوية العابدية", code: "551107" }, { name: "ثانوية بوخاري عبد المالك النزلة", code: "551108" }, { name: "ثانوية عبودة علي -حي المستقبل - توقرت", code: "551109" }, { name: "ثانوية مسغوني م الصالح - حي المستقبل", code: "551110" }] }, "الحجيرة": { "متوسط": [{ name: "متوسطة ابن سينا الحجيرة", code: "552201" }, { name: "متوسطة لخضاري لخضر العالية", code: "552202" }, { name: "متوسطة زوابري مسعود لقراف الحجيرة", code: "552203" }, { name: "متوسطة السايح بن عيسى محمد السايح العالية", code: "552204" }, { name: "متوسطة بن شويحة حمزة الحجيرة", code: "552205" }, { name: "متوسطة شلغوم بشير الشقة -العالية-", code: "552206" }, { name: "المجاهد شعيب الأخضر الحجيرة", code: "552206" }], "ثانوي": [{ name: "ثانوية طارق بن زياد الحجيرة", code: "552101" }, { name: "ثانوية بساسي محمد الصغير العالية", code: "552102" }, { name: "ثانوية لحسيني محمد الحجيرة", code: "552103" }, { name: "ثانوية بالضياف محمد لقراف الحجيرة", code: "552104" }] }, "الطيبات": { "متوسط": [{ name: "متوسطة أحمد زبانة الطيبات", code: "553201" }, { name: "متوسطة موسى بن نصير المنقر", code: "553202" }, { name: "متوسطة طارق بن زياد بن ناصر", code: "553203" }, { name: "متوسطة نتاري محمد الدليلعي الطيبات", code: "553204" }, { name: "متوسطة العقون محمد الكبير الطيبات", code: "553205" }, { name: "متوسطة معمري محمد بن ناصر", code: "553206" }, { name: "متوسطة العيد زقرير المنقر", code: "553207" }, { name: "متوسطة بلعجال أحمد الخبنة الطيبات", code: "553208" }, { name: "متوسطة المجاهد الخذير أحمد المنقر", code: "553209" }, { name: "متوسطة المجاهد رابحي العيد المنقر", code: "553210" }, { name: "متوسطة المجاهد بكاري ع القادر دليليعي الطيبات", code: "553211" }], "ثانوي": [{ name: "ثانوية ابن رشيق القيرواني الطيبات", code: "553101" }, { name: "ثانوية المنقر - دقعة علي المنقر", code: "553102" }, { name: "ثانوية عبيد أحمد بن ناصر", code: "553103" }, { name: "ثانوية زقوني الصغير الدليليعي الطيبات", code: "553104" }] }, "المقارين": { "متوسط": [{ name: "متوسطة الفرابي المقارين", code: "554201" }, { name: "متوسطة طفحي مسعود سيدي سليمان", code: "554202" }, { name: "متوسطة بلحارث محمد السايح سيدي سليمان", code: "554203" }, { name: "متوسطة سوفي الهاشمي الطيبات", code: "554204" }, { name: "متوسطة الشهيد عبد الرحمان قوتال القصور المقارين", code: "554205" }, { name: "متوسطة الشهيد أحميدة بوحفص المقارين", code: "554206" }, { name: "متوسطة بركبية عبد الرزاق المقارين", code: "554207" }, { name: "متوسطة الشهيد تماسيني ع الرحمان لهريهيرة المقارين", code: "554208" }], "ثانوي": [{ name: "ثانوية خالد بن الوليد المقارين", code: "554101" }, { name: "ثانوية بن عمر النوي سيدي سليمان", code: "554102" }, { name: "ثانوية عميش سعدون المقارين", code: "554103" }] }, "تماسين": { "متوسط": [{ name: "متوسطة عمر بن الخطاب تماسين", code: "555201" }, { name: "متوسطة مولاتي محمد السايح بلدة عمر", code: "555202" }, { name: "متوسطة أبو بكر الرازي البحور تماسين", code: "555203" }, { name: "متوسطة قوني محمد الطيب سيدي عامر تماسين", code: "555204" }, { name: "متوسطة معركة قرداش بلدة عمر", code: "555205" }, { name: "متوسطة محمد الصديق بن يحي حي الكدية تماسين", code: "555206" }, { name: "متوسطة بركة عبد الرزاق قوق بلدة عمر", code: "555207" }, { name: "متوسطة بدودة السايح تملاحت تماسين", code: "555208" }, { name: "متوسطة ع ابن باديس قوق بلدة عمر", code: "555209" }], "ثانوي": [{ name: "ثانوية مفدي زكريا تماسين", code: "555101" }, { name: "ثانوية العيد بن الصحراوي بلدة عمر", code: "555102" }, { name: "ثانوية قويدري محمد العيد تماسين", code: "555103" }, { name: "ثانوية تجيني محمد لخضر بلدة عمر", code: "555104" }, { name: "ثانوية مالك بن نبي قوق", code: "555105" }] } };
+  </script>
+</body>
+</html>

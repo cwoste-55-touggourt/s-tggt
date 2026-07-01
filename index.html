@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لجنة الخدمات الاجتماعية لعمال التربية - ولاية توقرت</title>
+    
+    <!-- الخطوط والأيقونات -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- مكتبة Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- إعدادات Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] },
+                    colors: {
+                        primary: '#1976d2',
+                        primaryDark: '#0d47a1',
+                        accent: '#fb8c00'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- تنسيقات مخصصة وحركات تفاعلية -->
+    <style>
+        body { font-family: 'Cairo', sans-serif; overflow-x: hidden; background-color: #f8fafc; }
+        
+        /* حركة الشعار (دوران بطيء وطفو) */
+        @keyframes float-spin {
+            0% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-4px) rotate(8deg); }
+            100% { transform: translateY(0px) rotate(0deg); }
+        }
+        .animated-logo {
+            animation: float-spin 5s ease-in-out infinite;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            object-fit: cover;
+            background-color: white;
+        }
+
+        /* تأثير الزجاج (Glassmorphism) */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* حركات التمرير (Scroll Reveal) */
+        .reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* تأثيرات البطاقات التفاعلية */
+        .service-card {
+            overflow: hidden;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            transition: all 0.4s ease;
+            background: white;
+        }
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(25, 118, 210, 0.2);
+        }
+        .service-card img {
+            transition: transform 0.6s ease;
+        }
+        .service-card:hover img {
+            transform: scale(1.1);
+        }
+        
+        /* تأثير التدرج اللوني للنصوص */
+        .text-gradient {
+            background: linear-gradient(135deg, #1976d2, #26c6da);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* شريط الأخبار بطيء جدا (45s) */
+        .ticker-wrap { width: 100%; overflow: hidden; background-color: #0d47a1; color: white; display: flex; align-items: center; }
+        .ticker { display: flex; white-space: nowrap; animation: ticker 45s linear infinite; }
+        @keyframes ticker { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    </style>
+</head>
+<body class="text-slate-800 font-cairo selection:bg-primary selection:text-white">
+
+    <!-- شريط الأخبار العاجلة -->
+    <div class="ticker-wrap h-10 text-sm font-semibold relative z-50 shadow-md">
+        <div class="bg-red-600 px-4 h-full flex items-center justify-center absolute right-0 z-10 shadow-lg">
+            <span class="animate-pulse mr-2 w-2 h-2 bg-white rounded-full"></span>
+            أخبار هامة
+        </div>
+        <div class="ticker pl-10 pr-32">
+            <span class="mx-10"><i class="fa-solid fa-bullhorn text-accent ml-2"></i> انطلاق التسجيلات لرحلات العمرة لموسم 2026 ابتداءً من الأسبوع القادم.</span>
+            <span class="mx-10"><i class="fa-solid fa-bullhorn text-accent ml-2"></i> يرجى من المتقاعدين الجدد التقرب من مقر اللجنة لتسوية ملفاتهم.</span>
+            <span class="mx-10"><i class="fa-solid fa-bullhorn text-accent ml-2"></i> توقيع اتفاقية جديدة مع عيادات طبية بولاية توقرت بتخفيضات تصل لـ 40%.</span>
+        </div>
+    </div>
+
+    <!-- الشريط العلوي (النافبار) -->
+    <nav class="glass-nav fixed w-full top-10 z-40 transition-all duration-300 py-3 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center">
+                <!-- الشعار والعنوان -->
+                <div class="flex items-center gap-3">
+                    <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="شعار اللجنة" class="h-12 w-12 sm:h-14 sm:w-14 animated-logo">
+                    <div>
+                        <h1 class="font-black text-xl text-primaryDark leading-tight">لجنة الخدمات الاجتماعية</h1>
+                        <p class="text-xs font-bold text-slate-500">لعمال التربية - ولاية توقرت</p>
+                    </div>
+                </div>
+
+                <!-- الروابط (شاشات كبيرة) -->
+                <div class="hidden md:flex space-x-8 space-x-reverse font-bold text-slate-600">
+                    <a href="#" class="hover:text-primary transition-colors">الرئيسية</a>
+                    <a href="#services" class="hover:text-primary transition-colors">نشاطاتنا</a>
+                    <a href="#about" class="hover:text-primary transition-colors">عن اللجنة</a>
+                    <a href="#contact" class="hover:text-primary transition-colors">اتصل بنا</a>
+                </div>
+
+                <!-- زر تسجيل الدخول -->
+                <div class="hidden md:block">
+                    <a href="auth_system.html" class="bg-gradient-to-r from-primary to-blue-500 text-white px-6 py-2.5 rounded-full font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+                        الولوج للمنصة <i class="fa-solid fa-arrow-left mr-2"></i>
+                    </a>
+                </div>
+
+                <!-- زر القائمة (شاشات صغيرة) -->
+                <button class="md:hidden text-primary text-2xl">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- قسم الواجهة الرئيسية (Hero Section) -->
+    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden flex items-center min-h-[90vh]">
+        <!-- خلفية الواجهة -->
+        <div class="absolute inset-0 z-0">
+            <img src="https://lh3.googleusercontent.com/d/1SjXkF89C6kXYn1ssrEeW15zO45LRJUKl" alt="خلفية تعليمية" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-l from-white/95 via-white/80 to-transparent"></div>
+        </div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex flex-col lg:flex-row items-center">
+            <div class="lg:w-3/5 text-right reveal active">
+                <span class="inline-block py-1 px-3 rounded-full bg-blue-100 text-primary font-bold text-sm mb-4 border border-blue-200">
+                    <i class="fa-solid fa-star text-accent mr-1"></i> بوابتكم نحو خدمات أفضل
+                </span>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-800 leading-tight mb-6">
+                    المنصة الرقمية للخدمات الاجتماعية <br>
+                    <span class="text-gradient">لولاية توقرت</span>
+                </h1>
+                <p class="text-lg text-slate-600 mb-8 font-semibold max-w-2xl leading-relaxed">
+                    نسعى لتقديم أفضل الخدمات الصحية، الترفيهية، والاجتماعية لعمال قطاع التربية والمتقاعدين وأرامل القطاع في ولاية توقرت بكل شفافية وسهولة.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#services" class="bg-primary text-white px-8 py-3.5 rounded-full font-bold shadow-lg hover:bg-primaryDark transition-all duration-300">
+                        اكتشف خدماتنا
+                    </a>
+                    <a href="auth_system.html" class="bg-white text-primary border-2 border-primary px-8 py-3.5 rounded-full font-bold shadow-md hover:bg-blue-50 transition-all duration-300">
+                        إنشاء حساب جديد
+                    </a>
+                </div>
+            </div>
+            
+            <!-- عنصر تزييني في الواجهة (حاوية الصور) -->
+            <div class="hidden lg:block lg:w-2/5 reveal active relative" style="transition-delay: 0.2s;">
+                <div class="absolute inset-0 bg-gradient-to-tr from-primary/20 to-accent/20 rounded-full blur-3xl"></div>
+                
+                <!-- ⚠️ الإطار الثابت الذي يحوي الميلان والحجم ⚠️ -->
+                <div id="slider-container" class="relative z-10 rounded-[2rem] shadow-2xl border-4 border-white transform -rotate-3 hover:rotate-0 transition-all duration-500 w-full aspect-[4/3] overflow-hidden bg-slate-200">
+                    <!-- سيتم حقن الصور هنا برمجياً لتتغير دون اختفاء الإطار -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- قسم الإحصائيات -->
+    <section class="py-12 bg-primary relative z-20 -mt-10 mx-4 sm:mx-8 lg:mx-20 rounded-3xl shadow-2xl reveal">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-x-reverse divide-white/20">
+                <div class="p-4">
+                    <i class="fa-solid fa-users text-3xl text-accent mb-3"></i>
+                    <h3 class="text-4xl font-black text-white mb-1">12,500+</h3>
+                    <p class="text-blue-100 font-semibold">مستفيد مسجل</p>
+                </div>
+                <div class="p-4">
+                    <i class="fa-solid fa-plane-departure text-3xl text-accent mb-3"></i>
+                    <h3 class="text-4xl font-black text-white mb-1">45</h3>
+                    <p class="text-blue-100 font-semibold">رحلة منظمة</p>
+                </div>
+                <div class="p-4">
+                    <i class="fa-solid fa-hand-holding-heart text-3xl text-accent mb-3"></i>
+                    <h3 class="text-4xl font-black text-white mb-1">8,200</h3>
+                    <p class="text-blue-100 font-semibold">منحة مقدمة</p>
+                </div>
+                <div class="p-4">
+                    <i class="fa-solid fa-hospital text-3xl text-accent mb-3"></i>
+                    <h3 class="text-4xl font-black text-white mb-1">15</h3>
+                    <p class="text-blue-100 font-semibold">اتفاقية طبية</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- قسم النشاطات والخدمات -->
+    <section id="services" class="py-24 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 reveal">
+                <h2 class="text-primary font-black text-sm tracking-widest uppercase mb-2">نشاطاتنا ومجالات تدخلنا</h2>
+                <h3 class="text-3xl md:text-4xl font-black text-slate-800">باقة متنوعة من الخدمات <span class="text-accent">لراحتكم</span></h3>
+                <div class="w-24 h-1.5 bg-gradient-to-r from-primary to-accent mx-auto mt-6 rounded-full"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                
+                <!-- خدمة 1 -->
+                <div class="service-card reveal group">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=800&auto=format&fit=crop" alt="قسم الصحة" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 right-4 text-white">
+                            <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center mb-2 shadow-lg">
+                                <i class="fa-solid fa-stethoscope text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xl font-bold text-slate-800 mb-2">قسم الصحة والطب</h4>
+                        <p class="text-slate-600 font-medium mb-4">تكفل شامل بالعمليات الجراحية، التحاليل الطبية، والأشعة بالتعاقد مع أفضل العيادات.</p>
+                        <a href="#" class="text-primary font-bold hover:text-accent transition-colors flex items-center gap-2">
+                            التفاصيل <i class="fa-solid fa-arrow-left text-sm"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- خدمة 2 -->
+                <div class="service-card reveal group" style="transition-delay: 0.1s;">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1565552645632-d725f8bfc19a?q=80&w=800&auto=format&fit=crop" alt="السياحة والعمرة" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 right-4 text-white">
+                            <div class="w-12 h-12 bg-accent rounded-full flex items-center justify-center mb-2 shadow-lg">
+                                <i class="fa-solid fa-kaaba text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xl font-bold text-slate-800 mb-2">الرحلات والعمرة</h4>
+                        <p class="text-slate-600 font-medium mb-4">تنظيم رحلات سياحية داخلية وخارجية، بالإضافة إلى قرعة العمرة السنوية بأسعار مدعمة.</p>
+                        <a href="#" class="text-primary font-bold hover:text-accent transition-colors flex items-center gap-2">
+                            التفاصيل <i class="fa-solid fa-arrow-left text-sm"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- خدمة 3 -->
+                <div class="service-card reveal group" style="transition-delay: 0.2s;">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1469571486292-0ba58a3f068b?q=80&w=800&auto=format&fit=crop" alt="المنح الاجتماعية" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 right-4 text-white">
+                            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-2 shadow-lg">
+                                <i class="fa-solid fa-handshake-angle text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xl font-bold text-slate-800 mb-2">المنح الاجتماعية</h4>
+                        <p class="text-slate-600 font-medium mb-4">منح الزواج، التقاعد، الأيتام، الأرامل، ومنح خاصة بذوي الاحتياجات الخاصة من أبناء العمال.</p>
+                        <a href="#" class="text-primary font-bold hover:text-accent transition-colors flex items-center gap-2">
+                            التفاصيل <i class="fa-solid fa-arrow-left text-sm"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- خدمة 4 -->
+                <div class="service-card reveal group">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=800&auto=format&fit=crop" alt="قسم السلف" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 right-4 text-white">
+                            <div class="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mb-2 shadow-lg">
+                                <i class="fa-solid fa-money-bill-wave text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xl font-bold text-slate-800 mb-2">قسم السلف</h4>
+                        <p class="text-slate-600 font-medium mb-4">تقديم سلف مالية استثنائية، سلف بناء أو شراء سكن، وسلف شراء السيارات بدون فوائد.</p>
+                        <a href="#" class="text-primary font-bold hover:text-accent transition-colors flex items-center gap-2">
+                            التفاصيل <i class="fa-solid fa-arrow-left text-sm"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- خدمة 5 -->
+                <div class="service-card reveal group" style="transition-delay: 0.1s;">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=800&auto=format&fit=crop" alt="الرياضة والثقافة" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 right-4 text-white">
+                            <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-2 shadow-lg">
+                                <i class="fa-solid fa-medal text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xl font-bold text-slate-800 mb-2">الرياضة والثقافة</h4>
+                        <p class="text-slate-600 font-medium mb-4">تنظيم دورات رياضية، رحلات للمخيمات الصيفية للأطفال، وتكريم المتفوقين في الامتحانات.</p>
+                        <a href="#" class="text-primary font-bold hover:text-accent transition-colors flex items-center gap-2">
+                            التفاصيل <i class="fa-solid fa-arrow-left text-sm"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- خدمة 6 -->
+                <div class="service-card reveal group" style="transition-delay: 0.2s;">
+                    <div class="relative h-56 overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800&auto=format&fit=crop" alt="التعاونية الاستهلاكية" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+                        <div class="absolute bottom-4 right-4 text-white">
+                            <div class="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mb-2 shadow-lg">
+                                <i class="fa-solid fa-cart-shopping text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h4 class="text-xl font-bold text-slate-800 mb-2">التعاونية الاستهلاكية</h4>
+                        <p class="text-slate-600 font-medium mb-4">توفير الأجهزة الكهرومنزلية والأثاث بالتقسيط المريح بالتعاون مع مؤسسات معتمدة.</p>
+                        <a href="#" class="text-primary font-bold hover:text-accent transition-colors flex items-center gap-2">
+                            التفاصيل <i class="fa-solid fa-arrow-left text-sm"></i>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- الفوتر (Footer) -->
+    <footer class="bg-slate-900 text-slate-300 pt-16 pb-8 border-t-4 border-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+                
+                <!-- معلومات اللجنة -->
+                <div class="reveal">
+                    <h3 class="text-2xl font-black text-white mb-6 flex items-center gap-3">
+                        <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="شعار" class="h-10 w-10 animated-logo">
+                        خدمات توقرت
+                    </h3>
+                    <p class="mb-6 font-medium leading-relaxed">
+                        نعمل بشفافية ومصداقية للارتقاء بالمستوى الاجتماعي والصحي لجميع عمال وعاملات قطاع التربية بولاية توقرت.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary transition-colors text-white">
+                            <i class="fa-brands fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-primary transition-colors text-white">
+                            <i class="fa-brands fa-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- روابط سريعة -->
+                <div class="reveal" style="transition-delay: 0.1s;">
+                    <h3 class="text-xl font-bold text-white mb-6 relative inline-block">
+                        روابط سريعة
+                        <span class="absolute bottom-0 left-0 w-1/2 h-1 bg-primary rounded-full -mb-2"></span>
+                    </h3>
+                    <ul class="space-y-3 font-semibold">
+                        <li><a href="auth_system.html" class="hover:text-primary transition-colors flex items-center gap-2"><i class="fa-solid fa-angle-left text-xs"></i> تسجيل الدخول / إنشاء حساب</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors flex items-center gap-2"><i class="fa-solid fa-angle-left text-xs"></i> تحميل استمارات المنح</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors flex items-center gap-2"><i class="fa-solid fa-angle-left text-xs"></i> قوانين وضوابط اللجنة</a></li>
+                        <li><a href="#" class="hover:text-primary transition-colors flex items-center gap-2"><i class="fa-solid fa-angle-left text-xs"></i> قائمة العيادات المتعاقدة</a></li>
+                    </ul>
+                </div>
+
+                <!-- اتصل بنا -->
+                <div class="reveal" style="transition-delay: 0.2s;">
+                    <h3 class="text-xl font-bold text-white mb-6 relative inline-block">
+                        تواصل معنا
+                        <span class="absolute bottom-0 left-0 w-1/2 h-1 bg-primary rounded-full -mb-2"></span>
+                    </h3>
+                    <ul class="space-y-4 font-semibold">
+                        <li class="flex items-start gap-3">
+                            <i class="fa-solid fa-location-dot mt-1 text-accent"></i>
+                            <span>مقر لجنة الخدمات الاجتماعية لعمال التربية، ولاية توقرت، الجزائر.</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fa-solid fa-phone text-accent"></i>
+                            <span dir="ltr">032 00 00 00</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fa-solid fa-envelope text-accent"></i>
+                            <span>contact@cwoste-touggourt.dz</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+            
+            <div class="border-t border-slate-800 pt-8 text-center font-semibold text-sm reveal">
+                <p>جميع الحقوق محفوظة &copy; 2026 - اللجنة الولائية للخدمات الاجتماعية لعمال التربية لولاية توقرت</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- سكربتات الانيميشن وسلايدر الصور -->
+    <script>
+        // --------------------------------------------------------
+        // 1. مصفوفة الروابط (الصور المتغيرة داخل الإطار الثابت)
+        // --------------------------------------------------------
+        const sliderImagesUrls = [
+            "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop", // الصورة الأصلية
+            "https://images.unsplash.com/photo-1529070538774-1843cb1665e1?q=80&w=800&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?q=80&w=800&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1531206715517-5c0ba140b2b8?q=80&w=800&auto=format&fit=crop"
+        ];
+
+        const container = document.getElementById('slider-container');
+        let currentImgIdx = 0;
+        let imagesElements = [];
+
+        // توليد الصور داخل الإطار الثابت
+        if(container) {
+            sliderImagesUrls.forEach((url, index) => {
+                let img = document.createElement('img');
+                img.src = url;
+                // انتقال ناعم وتدريجي
+                img.className = `absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${index === 0 ? 'opacity-100' : 'opacity-0'}`;
+                container.appendChild(img);
+                imagesElements.push(img);
+            });
+
+            // تبديل الصور (تلاشي) كل 4 ثواني
+            setInterval(() => {
+                imagesElements[currentImgIdx].classList.replace('opacity-100', 'opacity-0');
+                currentImgIdx = (currentImgIdx + 1) % imagesElements.length;
+                imagesElements[currentImgIdx].classList.replace('opacity-0', 'opacity-100');
+            }, 4000);
+        }
+
+        // --------------------------------------------------------
+        // 2. حركات التمرير (Scroll Reveal)
+        // --------------------------------------------------------
+        function reveal() {
+            var reveals = document.querySelectorAll(".reveal");
+            for (var i = 0; i < reveals.length; i++) {
+                var windowHeight = window.innerHeight;
+                var elementTop = reveals[i].getBoundingClientRect().top;
+                var elementVisible = 100;
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add("active");
+                }
+            }
+        }
+        window.addEventListener("scroll", reveal);
+        // تشغيلها مرة عند التحميل
+        reveal();
+
+        // --------------------------------------------------------
+        // 3. تأثير خلفية النافبار عند النزول
+        // --------------------------------------------------------
+        const nav = document.querySelector('.glass-nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                nav.classList.add('shadow-md');
+                nav.classList.replace('top-10', 'top-0');
+            } else {
+                nav.classList.remove('shadow-md');
+                nav.classList.replace('top-0', 'top-10');
+            }
+        });
+    </script>
+</body>
+</html>
