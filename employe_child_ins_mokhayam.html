@@ -1,0 +1,2830 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>الخدمات الإجتماعية توقرت</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- مكتبات -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+   <script src="https://unpkg.com/html5-qrcode"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+
+
+<style>
+
+/* خلفية شفافة */
+#imageLoaderOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.22);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 99999;
+}
+
+/* الصندوق الأبيض */
+#loaderBox {
+    background: #ffffff;
+    padding: 28px 40px;
+    border-radius: 16px;
+    box-shadow: 0 8px 35px rgba(0,0,0,0.20);
+    text-align: center;
+}
+
+/* دائرة التحميل */
+.loader-circle {
+    border: 6px solid #e6e6e6;
+    border-top: 6px solid #2575fc;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    margin: auto;
+    animation: spinLoader 0.9s linear infinite; /* دوران فقط */
+}
+
+/* دوران اللودر */
+@keyframes spinLoader {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* نص التحليل ثابت */
+.loader-text {
+    margin-top: 15px;
+    font-size: 19px;
+    font-weight: 700;
+    color: #2575fc;
+    font-family: 'Cairo', sans-serif;
+}
+
+
+
+  
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      display: flex; justify-content: center; align-items: center;
+      min-height: 100vh; padding: 15px; overflow-x: hidden;
+    }
+
+    /* ====== تصميم الواجهة (قبل التحقق) ====== */
+    .container {
+      position: relative; background: white;
+      padding: 35px 40px 10px;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+      text-align: center; width: 100%; max-width: 580px;
+      margin: 0 auto;
+    }
+
+    .page-header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .page-header .header-logo {
+      width: 250px;
+      height: auto;
+      display: block;
+      margin: 0 auto 0px auto;
+      filter: contrast(1.05) brightness(1.1);
+      animation: pulseLogo 2.5s ease-in-out infinite;
+    }
+
+    @keyframes pulseLogo {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .header-text {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: #444;
+      margin-bottom: 10px;
+    }
+
+    .gradient-title {
+      font-size: 20px;
+      font-weight: 600;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-top: 0px;
+      margin-bottom: 15px;
+      display: inline-block;
+      position: relative;
+    }
+
+    .gradient-title::after {
+      content: "";
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      border-radius: 2px;
+    }
+
+    /* ====== عناصر الإدخال (واجهة التحقق فقط) ====== */
+    input, select, textarea {
+      width: 100%; padding: 12px 14px; margin-bottom: 12px;
+      border-radius: 8px; border: 2px solid #e0e0e0;
+      font-size: 14px; text-align: center;
+      font-family: 'Cairo', sans-serif; font-weight: 500;
+    }
+
+    input[readonly] { background:#f5f5f5; }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #2575fc;
+    }
+
+    button {
+      background: linear-gradient(45deg, #6a11cb, #2575fc);
+      color: white; border: none;
+      padding: 14px 0; border-radius: 10px;
+      font-size: 15px; cursor: pointer;
+      font-weight: 600; width: 100%;
+      font-family: 'Cairo', sans-serif;
+    }
+
+    .small-note { font-size:12px; color:#666; margin-bottom:8px; text-align:center; }
+
+    /* ====== تنسيق تجاوب الهواتف ====== */
+    @media (max-width: 600px) {
+      .container {
+        padding: 25px 20px 15px;
+        border-radius: 14px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      }
+
+      .page-header .header-logo {
+        width: 120px;
+      }
+
+      .gradient-title {
+        font-size: 20px;
+        margin-top: 20px;
+      }
+
+      input, select, button {
+        font-size: 14px;
+        padding: 12px;
+      }
+    }
+
+/* ====== تنسيق الاستمارة ====== */
+#registrationForm {
+  text-align: center;
+}
+
+form label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  font-size: 14px;
+  text-align: center;
+  font-family: 'Cairo', sans-serif;
+  font-weight: 500;
+}
+
+input[readonly] {
+  background: #f5f5f5;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #2575fc;
+}
+
+button {
+  background: linear-gradient(45deg, #6a11cb, #2575fc);
+  color: white;
+  border: none;
+  padding: 14px 0;
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 600;
+  width: 100%;
+  font-family: 'Cairo', sans-serif;
+}
+
+.receipt-download-btn {
+  margin-top: 12px;
+  font-size: 14px;
+  background: #28a745 !important;
+  color: white !important;
+  border: none !important;
+  padding: 10px 20px !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  font-family: 'Cairo', sans-serif !important;
+  transition: background 0.3s ease !important;
+}
+
+.receipt-download-btn:hover {
+  background: #218838 !important;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.deposit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 6px;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px dashed #c7d2ff;
+  border-radius: 14px;
+  background: #f5f7ff;
+}
+
+.deposit-tag {
+  background: linear-gradient(135deg, #ffffff, #f1f4ff);
+  color: #1f2c6d;
+  padding: 6px 14px 6px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid #8da2ff;
+  box-shadow: 0 3px 8px rgba(92, 110, 200, 0.18);
+  cursor: default;
+}
+
+.deposit-tag .tag-remove {
+  color: #e71d36;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deposit-year-block {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px dashed #d2d7ff;
+  border-radius: 10px;
+}
+
+.deposit-year-block label {
+  text-align: center;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.selected-years-label {
+  margin-top: 10px;
+}
+
+.col {
+  flex: 1;
+}
+
+@media (max-width: 680px) {
+  .row { flex-direction: column; }
+}
+
+/* ====== تنسيق خاص لحقول أرقام الهواتف ====== */
+#phoneDirectorField::placeholder,
+#phoneFinancialField::placeholder {
+  text-align: center;
+  direction: rtl;
+}
+
+#phoneDirectorField,
+#phoneFinancialField {
+  text-align: center;
+  direction: ltr;
+}
+
+
+/* --- تنسيقات الصناديق --- */
+.section-box { background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 20px; text-align: right; }
+.employee-box { background-color: #f9f9f9; border: 1px solid #eee; }
+.employee-box .section-title { color: #555; border-bottom: 1px solid #ddd; }
+.child-box { border: 2px solid #2575fc; box-shadow: 0 4px 12px rgba(37, 117, 252, 0.08); }
+.child-box .section-title { color: #2575fc; border-bottom: 1px solid #2575fc; }
+.section-title { font-size: 16px; font-weight: 700; margin-bottom: 15px; padding-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+
+/* --- تنسيق عجلة التاريخ الاحترافية --- */
+.pro-date-picker { display: flex; flex-direction: row; gap: 5px; background-color: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 2px; margin-bottom: 12px; transition: all 0.3s ease; }
+.pro-date-picker:focus-within { border-color: #2575fc; box-shadow: 0 0 8px rgba(37, 117, 252, 0.2); }
+.pro-date-picker select { flex: 1; border: none; background: transparent; margin-bottom: 0; padding: 10px 2px; font-size: 14px; font-weight: 600; cursor: pointer; appearance: none; -webkit-appearance: none; outline: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: left 5px center; background-size: 10px; }
+.pro-date-picker select:not(:last-child) { border-left: 1px solid #eee; }
+
+  </style>
+</head>
+
+<body>
+  <div class="container" id="mainContainer">
+    <div class="page-header">
+     
+      <div class="header-text">
+        الجمهورية الجزائرية الديمقراطية الشعبية<br>
+        وزارة التربية الوطنية<br>
+        اللجنة الوطنية للخدمات الإجتماعية لعمال التربية<br>
+        اللجنة الولائية للخدمات الإجتماعية لعمال التربية لولاية توقرت
+      </div>
+ <img src="https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15" alt="شعار اللجنة" class="header-logo">
+      <h2 class="gradient-title">بوابة تسجيل أبناء القطاع - الموظفين - في المخيم الصيفي</h2>
+      <input type="text" id="empId" placeholder="أدخل رقم التعريف الوظيفي" oninput="validateNumber(this)">
+      <button onclick="checkEmployee()">تسجيل الدخول</button>
+
+
+<!-- 🔍 زر مسح الباركود -->
+<button type="button" onclick="startBarcodeScanner()" 
+style="
+  background:#007bff; 
+  color:white; 
+  padding:6px 12px; 
+  font-size:13px;
+  border:none; 
+  border-radius:6px; 
+  margin-top:8px; 
+  display:flex; 
+  align-items:center; 
+  justify-content:center;
+  gap:6px;
+  width:100%;
+">
+  <i class="fa-solid fa-camera"></i>
+  مسح الباركود
+</button>
+
+
+
+
+<!-- مكان عرض الكاميرا -->
+<div id="reader" style="width:280px; margin:10px auto; display:none;"></div>
+
+<!-- زر رفع صورة (مخفي) -->
+<input type="file" id="barcodeImage" accept="image/*" 
+style="display:none; margin-top:8px;">
+
+      
+    </div>
+  </div>
+
+<!-- ✅ قسم الاستمارة -->
+<div id="registrationForm" style="display:none; margin-top:25px;">
+
+  <form id="empForm">
+    
+    <!-- الصف 1 -->
+    <div class="row">
+      <div class="col">
+        <label for="empIdField">رقم التعريف الوظيفي</label>
+        <input type="text" id="empIdField" name="empId" readonly>
+      </div>
+      <div class="col">
+        <label for="fullName">الاسم الكامل</label>
+        <input type="text" id="fullName" name="fullName" required>
+      </div>
+    </div>
+
+    <!-- الصف 2 -->
+    <div class="row">
+      <div class="col">
+        <label for="rank">الرتبة</label>
+        <input type="text" id="rank" name="rank" required>
+      </div>
+      <div class="col">
+        <label for="workPlace">مكان العمل</label>
+        <input type="text" id="workPlace" name="workPlace" required>
+      </div>
+    </div>
+
+    <!-- الصف 3 -->
+    <div class="row">
+      <div class="col">
+        <label for="position">الصفة</label>
+        <input type="text" id="position" name="position" required>
+      </div>
+      <div class="col">
+        <label for="level">الطور</label>
+        <input type="text" id="level" name="level" required>
+      </div>
+    </div>
+
+    <!-- الصف 4 -->
+    <div class="row">
+      <div class="col">
+        <label for="district">الدائرة</label>
+        <input type="text" id="district" name="district" required>
+      </div>
+      <div class="col">
+        <label for="municipality">البلدية</label>
+        <input type="text" id="municipality" name="municipality" required>
+      </div>
+    </div>
+
+    <!-- الصف 5 -->
+    <div class="row">
+      <div class="col">
+        <label for="schoolName">اسم المتوسطة</label>
+        <input type="text" id="schoolName" name="schoolName" required>
+      </div>
+      <div class="col">
+        <label for="code">الرمز</label>
+        <input type="text" id="code" name="code" required>
+      </div>
+    </div>
+
+    <!-- الصف 6 -->
+    <div class="row">
+      <div class="col">
+        <label for="email">البريد الإلكتروني</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="col">
+        <label for="managerPhone">رقم هاتف الموظف</label>
+        <input type="tel" id="managerPhone" name="managerPhone" required>
+      </div>
+    </div>
+
+    <!-- الصف 7 -->
+    <div class="row">
+      <div class="col">
+        <label for="finName">الاسم الكامل للمسير المالي</label>
+        <input type="text" id="finName" name="finName" required>
+      </div>
+      <div class="col">
+        <label for="finPhone">رقم هاتف المسير المالي</label>
+        <input type="tel" id="finPhone" name="finPhone" required>
+      </div>
+    </div>
+
+    <button type="submit">تأكيد التسجيل</button>
+  </form>
+</div>
+
+<div id="imageLoaderOverlay">
+    <div id="loaderBox">
+        <div class="loader-circle"></div>
+        <div class="loader-text">جاري تحليل الصورة…</div>
+    </div>
+</div>
+
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAkQz9pB2ZNlYIvdlTRvi4try3D8LLXS4g",
+  authDomain: "databaseemploye.firebaseapp.com",
+  projectId: "databaseemploye",
+  storageBucket: "databaseemploye.firebasestorage.app",
+  messagingSenderId: "408231477466",
+  appId: "1:408231477466:web:e3bf5bd3eaca7cdcd3a5e3",
+  measurementId: "G-DW8QJ5B231"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const scriptURL = "https://script.google.com/macros/s/AKfycbxFdRepSCndlXxJjf9Sq7ULSMZthVjPkjShTEEaPUjhsAySxw5vTAtQQ_iF4xsUeb5uxA/exec";
+
+// يمكن تعديل بيانات الشعار والوصل من هذا الكائن بحسب متطلبات اللجنة
+const receiptBranding = {
+  logoUrl: "https://lh3.googleusercontent.com/d/1AOSzlvuRb-fAO0bqvo412HcHTfpRAX15",
+  govTitle: "الجمهورية الجزائرية الديمقراطية الشعبية",
+  ministry: "وزارة التربية الوطنية",
+  directorate: "مديرية التربية لولاية توقرت",
+  committee: "اللجنة الوطنية للخدمات الاجتماعية لعمال التربية",
+  service: "اللجنة الولائية للخدمات الإجتماعية لعمال التربية لولاية توقرت",
+  addressLine: "المقر: حي خميستي، توقرت",
+  contactLine: "الهاتف: 91 39 98 030       - البريد: cwostetggt55@gmail.com"
+};
+
+
+
+
+
+
+
+function validateNumber(input) {
+  input.value = input.value.replace(/\D/g, '');
+  if (input.value.length > 16) input.value = input.value.slice(0, 16);
+}
+
+async function checkEmployee() {
+  const empId = document.getElementById("empId").value.trim();
+
+  if (empId.length < 16) {
+    Swal.fire({ icon: 'warning', title: 'خطأ', text: 'رقم التعريف الوظيفي يجب أن يتكون من 16 رقمًا' });
+    return;
+  }
+
+  Swal.fire({ title: 'جاري التحقق...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  try {
+    const docRef = db.collection("employeescomplus").doc(empId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      Swal.close();
+      Swal.fire({
+        icon: "error",
+        title: "❌ خطأ",
+        html: `رقم الموظف غير موجود في قاعدة البيانات.`,
+        confirmButtonText: "حسناً"
+      });
+
+      return;
+    }
+
+    const data = docSnap.data();
+
+    // ✅ أولاً: التحقق من المستفيدين السابقين
+    const beneficiaryParams = new URLSearchParams();
+    beneficiaryParams.append("action", "check_previous_beneficiary");
+    beneficiaryParams.append("empId", empId);
+    beneficiaryParams.append("loanType", "exceptional");
+
+    try {
+      const beneficiaryRes = await fetch(scriptURL, {
+        method: "POST",
+        body: beneficiaryParams
+      });
+      const beneficiaryResult = await beneficiaryRes.json();
+
+      if (beneficiaryResult.result === "previous_beneficiary") {
+        Swal.close();
+        Swal.fire({
+          title: "⚠️ لا يمكنك التسجيل",
+          html: `
+            <div style="text-align:center;direction:rtl;font-family:'Cairo',sans-serif;">
+              <p style="color:#2c5aa0;font-weight:700;margin-bottom:10px;font-size:18px;">
+                ${escapeHtml(data.name || 'الموظف')}
+              </p>
+              <p style="color:#dc3545;font-weight:600;margin-bottom:15px;">
+                ${beneficiaryResult.message || 'أنت مستفيد(ة) من الرحلات السابقة'}
+              </p>
+              <p style="color:#666;font-size:14px;">
+               لا يحقّ للموظف الذي استفاد من رحلات الخدمات الاجتماعية خلال السنة نفسها إعادة التسجيل في البرنامج مرة أخرى، وذلك عملاً بالأحكام المعمول بها.
+              </p>
+            </div>
+          `,
+          icon: "error",
+          confirmButtonText: "حسناً",
+          confirmButtonColor: "#dc3545"
+        });
+        return;
+      }
+
+      // ✅ ثانياً: التحقق من وجود تسجيل سابق قبل عرض الاستمارة
+      const params = new URLSearchParams();
+      params.append("action", "check_existing");
+      params.append("empId", empId);
+      params.append("loanType", "exceptional"); // ✅ نوع السلفة: استثنائية
+
+      const res = await fetch(scriptURL, {
+        method: "POST",
+        body: params
+      });
+      const result = await res.json();
+
+      Swal.close();
+
+      if (result.result === "exists") {
+        const d = result.data || {};
+        const birthLine = formatToDayMonthYear(d.birthDate || d.diz || '');
+        const hireLine = formatToDayMonthYear(d.hireDate || d.dtw || '');
+        const childrenValue = (d.childrenCount ?? "").toString().trim();
+        const isFamilyStatusRequiringChildren = ["متزوج(ة)", "مطلق(ة)"].includes(d.maritalStatus);
+        const hasChildrenValue = childrenValue !== "";
+        const shouldRenderChildren = hasChildrenValue || isFamilyStatusRequiringChildren;
+        const childrenLine = shouldRenderChildren ? `<b>عدد الأولاد:</b> ${childrenValue || "0"}<br>` : "";
+        const spouseBlock = (d.dualSector === "نعم" && d.spouseEmpId)
+          ? `<b>رقم تعريف الزوج(ة):</b> ${d.spouseEmpId}<br>${d.spouseName ? `<b>اسم الزوج(ة):</b> ${d.spouseName}<br>` : ''}`
+          : "";
+        const fileYearLine = (d.fileSeniority === "نعم" && d.fileDepositYear)
+          ? `<b>سنة إيداع الملف:</b> ${d.fileDepositYear}<br>`
+          : "";
+        const depositCountLine = (d.fileSeniority === "نعم" && d.depositCount)
+          ? `<b>عدد مرات الإيداع:</b> ${d.depositCount}<br>`
+          : "";
+        const dualSectorLine = isFamilyStatusRequiringChildren
+          ? `<b>ثنائي القطاع:</b> ${d.dualSector || ''}<br>`
+          : "";
+Swal.fire({
+          title: "⚠️ التسجيل موجود مسبقًا",
+          html: `
+            <div style="text-align:right;direction:rtl;font-family:'Cairo',sans-serif; line-height: 1.8;">
+              <b>رقم التعريف:</b> ${d.empId || ''}<br>
+              <b>الاسم واللقب:</b> ${d.name || ''}<br>
+              <b>الرتبة:</b> ${d.grade || ''}<br>
+              <b>مكان العمل:</b> ${d.place || ''}<br>
+              <b>دائرة العمل:</b> ${d.daira || ''}<br>
+              <b>بلدية العمل:</b> ${d.baladiya || ''}<br>
+              <b>رقم الهاتف:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatPhoneNumber(d.personalPhone || '')}</span><br>
+              <hr style="border:0; border-top:1px dashed #ccc; margin:8px 0;">
+              <b>الاسم الكامل للإبن:</b> ${d.childFullName || ''}<br>
+              <b>تاريخ ميلاد الإبن:</b> ${formatToDayMonthYear(d.childBirthDate || '')}<br>
+              <b>الحالة (يتيم):</b> ${d.isOrphan || ''}<br>
+              <b>دائرة التمدرس:</b> ${d.childDaaira || ''}<br>
+              <b>بلدية التمدرس:</b> ${d.childBaladiya || ''}<br>
+              <b>المستوى الدراسي:</b> ${d.category || ''}<br>
+              <b>مؤسسة الدراسة:</b> ${d.schoolName || ''}<br>
+              <b>المعدل السنوي:</b> ${d.childAge || ''}<br>
+              <b>الرحلة:</b> ${d.trip || ''}<br>
+              <hr style="border:0; border-top:1px dashed #ccc; margin:8px 0;">
+              <b>تاريخ التسجيل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.date || '')}</span>${d.modificationDate ? `<br><b>تاريخ التعديل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.modificationDate || '')}</span>` : ''}
+            </div>
+            <button type="button" class="receipt-download-btn" id="existingReceiptBtn">تحميل وصل التسجيل</button>`,
+          icon: "warning",
+          showCancelButton: true,
+          showDenyButton: true,
+          confirmButtonText: "تعديل البيانات",
+          denyButtonText: "حذف التسجيل",
+          cancelButtonText: "إغلاق",
+          confirmButtonColor: "#FFAD29",
+          denyButtonColor: "#dc3545",
+          didOpen: () => {
+            attachReceiptButton("existingReceiptBtn", d, {
+              actionSource: "عرض التسجيل المحفوظ",
+              registrationDate: d.date,
+              modificationDate: d.modificationDate
+            });
+          }
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // عرض الاستمارة مع البيانات للتعديل
+            showEditForm(empId, data, d);
+          } else if (result.isDenied) {
+            // حذف التسجيل
+            deleteRegistration(empId);
+          }
+        });
+        return; // 🟥 لا نعرض الاستمارة إلا عند الضغط على تعديل
+      }
+
+      // 🟢 في حالة عدم وجود تسجيل سابق → نسمح بمتابعة التسجيل
+      Swal.fire({
+        title: "✅ تم التحقق بنجاح",
+        html: `
+          <b>الاسم واللقب:</b> ${escapeHtml(data.name)}<br>
+          <b>الرتبة:</b> ${escapeHtml(data.grade)}<br>
+          <b>مكان العمل:</b> ${escapeHtml(data.place)}<br>
+          
+        `,
+        icon: "success",
+        confirmButtonText: "متابعة التسجيل"
+      }).then(() => showForm(empId, data));
+
+    } catch (err) {
+      Swal.close();
+      Swal.fire("❌ خطأ", "تعذر التحقق من التسجيلات السابقة", "error");
+      console.error("check_existing error:", err);
+    }
+
+  } catch (err) {
+    Swal.close();
+    Swal.fire("❌ خطأ", "حدث خطأ أثناء الاتصال بقاعدة بيانات الموظفين", "error");
+    console.error("Firebase error:", err);
+  }
+}
+
+
+function escapeHtml(str){ return String(str || '').replace(/[&<>"'`=\/]/g, function(s){ return '&#' + s.charCodeAt(0) + ';'; }); }
+
+// دالة لتحويل التاريخ من صيغة ISO إلى صيغة "HH:mm:ss ll YYYY-MM-DD"
+function formatDateFromISO(dateStr) {
+  if (!dateStr) return 'غير محدد';
+  
+  try {
+    let date;
+    
+    // التحقق إذا كان التاريخ بصيغة ISO (مثل: 2025-11-14T12:17:26.000Z)
+    if (dateStr.includes('T')) {
+      date = new Date(dateStr);
+    } else if (dateStr.includes('ll') && dateStr.includes('-') && dateStr.includes(':')) {
+      // إذا كان بصيغة "HH:mm:ss ll YYYY-MM-DD" نعيده كما هو
+      return dateStr;
+    } else if (dateStr.includes('-') && dateStr.includes(' ')) {
+      // إذا كان بصيغة "dd-MM-yyyy HH:mm:ss" نعيده كما هو
+      return dateStr;
+    } else {
+      // محاولة تحويله كتاريخ
+      date = new Date(dateStr);
+    }
+    
+    // التحقق من صحة التاريخ
+    if (isNaN(date.getTime())) {
+      return dateStr;
+    }
+    
+    // تحويل التاريخ إلى صيغة "HH:mm:ss ll YYYY-MM-DD"
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `${hours}:${minutes}:${seconds} ll ${year}-${month}-${day}`;
+  } catch (err) {
+    return dateStr; // في حالة الخطأ، نعيد التاريخ الأصلي
+  }
+}
+
+function formatToDayMonthYear(dateStr) {
+  if (!dateStr && dateStr !== 0) return '';
+
+  // دعم كائنات Timestamp القادمة من فايربيز
+  if (typeof dateStr === 'object') {
+    if (typeof dateStr.toDate === 'function') {
+      return formatDateObject(dateStr.toDate());
+    }
+    if (typeof dateStr.seconds === 'number') {
+      const millis = dateStr.seconds * 1000 + Math.floor((dateStr.nanoseconds || 0) / 1e6);
+      return formatDateObject(new Date(millis));
+    }
+  }
+
+  const trimmed = String(dateStr).trim();
+  if (!trimmed) return '';
+  if (/^\d{2}-\d{2}-\d{4}$/.test(trimmed)) return trimmed;
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [, year, month, day] = isoMatch;
+    return `${day}-${month}-${year}`;
+  }
+  if (trimmed.includes('T')) {
+    const date = new Date(trimmed);
+    if (!isNaN(date.getTime())) {
+      return formatDateObject(date);
+    }
+  }
+  return trimmed;
+}
+
+function formatDateObject(date) {
+  if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+/* ----- بيانات المؤسسات حسب الدائرة (متوسط / ثانوي) ----- 
+   يمكن توسيع هذا الكائن لاحقًا أو جلبه من ملف خارجي.
+*/
+window.institutionsByDaaira = {
+  "توقرت": {
+    "متوسط": [
+      { name: "متوسطة سعد بن أبي وقاص تقرت", code: "551201" },
+      { name: "متوسطة الإمام علي توقرت", code: "551202" },
+      { name: "متوسطة محمد الأمين العمودي تقرت", code: "551203" },
+      { name: "متوسطة الشيخ المقراني تبسبست", code: "551204" },
+      { name: "متوسطة بن هدية المدني النزلة", code: "551205" },
+      { name: "متوسطة عبد الحميد بن باديس توقرت", code: "551206" },
+      { name: "متوسطة حمزة بن عبد المطلب الزاوية العابدية", code: "551207" },
+      { name: "متوسطة نصرات حشاني تبسبست", code: "551208" },
+      { name: "متوسطة عيسات ايدير البهجة تبسبست", code: "551209" },
+      { name: "متوسطة تجيني محمد عين الصحراء النزلة", code: "551210" },
+      { name: "متوسطة ابن رشد حي العرقوب توقرت", code: "551211" },
+      { name: "متوسطة رضا حوحو الزاوية العابدية", code: "551212" },
+      { name: "متوسطة ميعادي فخر الدين النزلة", code: "551213" },
+      { name: "متوسطة عطالي محمد الصغير سيدي مهدي النزلة", code: "551214" },
+      { name: "متوسطة محمد عمران بوليفة حي الرمال توقرت", code: "551215" },
+      { name: "متوسطة عبد المؤمن بن علي النزلة", code: "551216" },
+      { name: "متوسطة بن الزاوي علي تبسبست", code: "551217" },
+      { name: "متوسطة البشير الابراهيمي توقرت", code: "551218" },
+      { name: "متوسطة حي 5 جويلية الزاوية العابدية", code: "551219" },
+      { name: "متوسطة بن حيزية عبد الله عين الصحراء 1 النزلة", code: "551220" },
+      { name: "متوسطة بن قلية محمد الزاوية العابدية", code: "551221" },
+      { name: "متوسطة تمرني محمد توقرت", code: "551222" },
+      { name: "متوسطة شاوش محمد تبسبست", code: "551223" },
+      { name: "متوسطة المجاهد التجاني الصادق النزلة", code: "551224" },
+      { name: "متوسطة خروبي محمد لخضر النزلة", code: "551225" },
+      { name: "متوسطة المجاهد سبقاق العيد توقرت", code: "551226" },
+      { name: "متوسطة دقعة الطاهر تبسبست", code: "551227" },
+      { name: "متوسطة بدودة معمر بن علي النزلة", code: "551228" },
+      { name: "متوسطة داشر الحاج حي المستقبل توقرت", code: "551229" },
+      { name: "متوسطة المجاهد رواص محمد حي المستقبل توقرت", code: "551230" },
+      { name: "متوسطة المجاهد بوليفة م العيدحي المستقبل توقرت", code: "551231" },
+      { name: "متوسطة المجاهد عماري السايححي المستقبل توقرت", code: "551232" }
+    ],
+    "ثانوي": [
+      { name: "ثانوية الأمير عبد القادر توقرت", code: "551101" },
+      { name: "ثانوية عبد الرحمان الكواكبي تبسبست", code: "551102" },
+      { name: "ثانوية الحسن بن الهيثم النزلة", code: "551103" },
+      { name: "ثانوية البشير الابراهيمي تبسبست", code: "551104" },
+      { name: "ثانوية هواري بومدين الزاوية العابدية", code: "551105" },
+      { name: "ثانوية أبو بكر بلقايد النزلة", code: "551106" },
+      { name: "ثانوية لزهاري تونسي الزاوية العابدية", code: "551107" },
+      { name: "ثانوية بوخاري عبد المالك النزلة", code: "551108" },
+      { name: "ثانوية عبودة علي -حي المستقبل - توقرت", code: "551109" },
+      { name: "ثانوية مسغوني م الصالح - حي المستقبل", code: "551110" }
+    ]
+  },
+
+  "الحجيرة": {
+    "متوسط": [
+      { name: "متوسطة ابن سينا الحجيرة", code: "552201" },
+      { name: "متوسطة لخضاري لخضر العالية", code: "552202" },
+      { name: "متوسطة زوابري مسعود لقراف الحجيرة", code: "552203" },
+      { name: "متوسطة السايح بن عيسى محمد السايح العالية", code: "552204" },
+      { name: "متوسطة بن شويحة حمزة الحجيرة", code: "552205" },
+      { name: "متوسطة شلغوم بشير الشقة -العالية-", code: "552206" },
+      { name: "المجاهد شعيب الأخضر الحجيرة", code: "552206" }
+    ],
+    "ثانوي": [
+      { name: "ثانوية طارق بن زياد الحجيرة", code: "552101" },
+      { name: "ثانوية بساسي محمد الصغير العالية", code: "552102" },
+      { name: "ثانوية لحسيني محمد الحجيرة", code: "552103" },
+      { name: "ثانوية بالضياف محمد لقراف الحجيرة", code: "552104" }
+    ]
+  },
+
+  "الطيبات": {
+    "متوسط": [
+      { name: "متوسطة أحمد زبانة الطيبات", code: "553201" },
+      { name: "متوسطة موسى بن نصير المنقر", code: "553202" },
+      { name: "متوسطة طارق بن زياد بن ناصر", code: "553203" },
+      { name: "متوسطة نتاري محمد الدليلعي الطيبات", code: "553204" },
+      { name: "متوسطة العقون محمد الكبير الطيبات", code: "553205" },
+      { name: "متوسطة معمري محمد بن ناصر", code: "553206" },
+      { name: "متوسطة العيد زقرير المنقر", code: "553207" },
+      { name: "متوسطة بلعجال أحمد الخبنة الطيبات", code: "553208" },
+      { name: "متوسطة المجاهد الخذير أحمد المنقر", code: "553209" },
+      { name: "متوسطة المجاهد رابحي العيد المنقر", code: "553210" },
+      { name: "متوسطة المجاهد بكاري ع القادر دليليعي الطيبات", code: "553211" }
+    ],
+    "ثانوي": [
+      { name: "ثانوية ابن رشيق القيرواني الطيبات", code: "553101" },
+      { name: "ثانوية المنقر - دقعة علي المنقر", code: "553102" },
+      { name: "ثانوية عبيد أحمد بن ناصر", code: "553103" },
+      { name: "ثانوية زقوني الصغير الدليليعي الطيبات", code: "553104" }
+    ]
+  },
+
+  "المقارين": {
+    "متوسط": [
+      { name: "متوسطة الفرابي المقارين", code: "554201" },
+      { name: "متوسطة طفحي مسعود سيدي سليمان", code: "554202" },
+      { name: "متوسطة بلحارث محمد السايح سيدي سليمان", code: "554203" },
+      { name: "متوسطة سوفي الهاشمي الطيبات", code: "554204" },
+      { name: "متوسطة الشهيد عبد الرحمان قوتال القصور المقارين", code: "554205" },
+      { name: "متوسطة الشهيد أحميدة بوحفص المقارين", code: "554206" },
+      { name: "متوسطة بركبية عبد الرزاق المقارين", code: "554207" },
+      { name: "متوسطة الشهيد تماسيني ع الرحمان لهريهيرة المقارين", code: "554208" }
+    ],
+    "ثانوي": [
+      { name: "ثانوية خالد بن الوليد المقارين", code: "554101" },
+      { name: "ثانوية بن عمر النوي سيدي سليمان", code: "554102" },
+      { name: "ثانوية عميش سعدون المقارين", code: "554103" }
+    ]
+  },
+
+  "تماسين": {
+    "متوسط": [
+      { name: "متوسطة عمر بن الخطاب تماسين", code: "555201" },
+      { name: "متوسطة مولاتي محمد السايح بلدة عمر", code: "555202" },
+      { name: "متوسطة أبو بكر الرازي البحور تماسين", code: "555203" },
+      { name: "متوسطة قوني محمد الطيب سيدي عامر تماسين", code: "555204" },
+      { name: "متوسطة معركة قرداش بلدة عمر", code: "555205" },
+      { name: "متوسطة محمد الصديق بن يحي حي الكدية تماسين", code: "555206" },
+      { name: "متوسطة بركة عبد الرزاق قوق بلدة عمر", code: "555207" },
+      { name: "متوسطة بدودة السايح تملاحت تماسين", code: "555208" },
+      { name: "متوسطة ع ابن باديس قوق بلدة عمر", code: "555209" }
+    ],
+    "ثانوي": [
+      { name: "ثانوية مفدي زكريا تماسين", code: "555101" },
+      { name: "ثانوية العيد بن الصحراوي بلدة عمر", code: "555102" },
+      { name: "ثانوية قويدري محمد العيد تماسين", code: "555103" },
+      { name: "ثانوية تجيني محمد لخضر بلدة عمر", code: "555104" },
+      { name: "ثانوية مالك بن نبي قوق", code: "555105" }
+    ]
+  }
+};
+
+/* ----- خريطة البلديات الأصلية (كما في كودك السابق) ----- */
+window.baladiyaMap = {
+  "توقرت": ["توقرت", "النزلة", "تبسبست", "الزاوية العابدية"],
+  "تماسين": ["تماسين", "بلدة عمر"],
+  "المقارين": ["المقارين", "سيدي سليمان"],
+  "الحجيرة": ["الحجيرة", "العالية"],
+  "الطيبات": ["الطيبات", "المنقر", "ابن ناصر"]
+};
+
+window.primarySchoolsByBaladiya = {
+  "ابن ناصر": [{ name: "إبتدائية عبد الحميد بن باديس - إبن ناصر" }, { name: "إبتدائية العربي التبسي - إبن ناصر" }, { name: "إبتدائية البشير الابراهيمي - إبن ناصر" }, { name: "إبتدائية هواري بومدين - إبن ناصر" }, { name: "إبتدائية المجاهد الصادق خلفاوي - إبن ناصر" }, { name: "إبتدائية المجاهد سراي مسعود ( المر) - إبن ناصر" }, { name: "إبتدائية المجاهد اليمان الطيب - إبن ناصر" }, { name: "إبتدائية المجاهد العقون خليفة - إبن ناصر" }, { name: "إبتدائية المجاهد قحمص محمد بن العيد - إبن ناصر" }, { name: "إبتدائية 13 مارس 1962 - إبن ناصر" }, { name: "إبتدائية اللأمير عبد القادر - إبن ناصر" }, { name: "إبتدائية العقبي الطيب - إبن ناصر" }],
+  "الحجيرة": [{ name: "إبتدائية ابن باديس - الحجيرة" }, { name: "إبتدائية ديدوش مراد - الحجيرة" }, { name: "إبتدائية نعام سليمان - الحجيرة" }, { name: "إبتدائية محمد العيد آل خليفة - الحجيرة" }, { name: "إبتدائية العيد بن الشيخ - الحجيرة" }, { name: "إبتدائية البشير الابراهيمي - الحجيرة" }, { name: "إبتدائية مصطفى بن بولعيد - الحجيرة" }, { name: "إبتدائية الشهيد الكاس - الحجيرة" }, { name: "إبتدائية صلاح الدين الأيوبي - الحجيرة" }, { name: "إبتدائية ابن خلدون - الحجيرة" }, { name: "إبتدائية علي عمار - الحجيرة" }, { name: "إبتدائية دومة أحمد - الحجيرة" }, { name: "إبتدائية عمار ياسف - الحجيرة" }, { name: "إبتدائية المجاهد كحول احمد - الحجيرة" }, { name: "إبتدائية كريبع مسعود - الحجيرة - - الحجيرة" }, { name: "إبتدائية المجاهد بالأعور العلمي ( لقراف الجديدة 2) - الحجيرة" }, { name: "إبتدائية مجمع مدرسي حي المير - الحجيرة" }, { name: "إبتدائية خنفر محمد لحسن - الحجيرة" }, { name: "إبتدائية حي بوضياف محمد لقراف - الحجيرة" }, { name: "إبتدائية محدادي العيد - الحجيرة" }],
+  "الزاوية العابدية": [{ name: "إبتدائية البحري بن المنور القديمة - الزاوية العابدية" }, { name: "إبتدائية مصطفى بن بولعيد - الزاوية العابدية" }, { name: "إبتدائية بوليفة محمد عمران - الزاوية العابدية" }, { name: "إبتدائية صولي عبد الرحمان ( 5 جويلية) - الزاوية العابدية" }, { name: "إبتدائية بشير كدة - الزاوية العابدية" }, { name: "إبتدائية عبد الرحمان بن نونة - الزاوية العابدية" }, { name: "إبتدائية عقبة بن نافع - الزاوية العابدية" }, { name: "إبتدائية المجاهد محمد الاخضر بن لمنور - الزاوية العابدية" }, { name: "إبتدائية غول محمد الصالح (حي السلام) - الزاوية العابدية" }, { name: "إبتدائية محمد مقداد - الزاوية العابدية" }, { name: "إبتدائية احمد بن لمنور - الزاوية العابدية" }],
+  "الطيبات": [{ name: "إبتدائية الاستاذ عمر بن عزة - الطيبات" }, { name: "إبتدائية المجاهد عماري معمر - الطيبات" }, { name: "إبتدائية الشهيد قحمص محمد - الطيبات" }, { name: "إبتدائية العلامة حمداوي محمد بن سليمان(القواشيش) - الطيبات" }, { name: "إبتدائية ميلود تريش(بكار القديمة) - الطيبات" }, { name: "إبتدائية المجاهد زقوني بشير - الطيبات" }, { name: "إبتدائية المجاهد مراد معمر( برحمون) - الطيبات" }, { name: "إبتدائية الشهيد محمد الشين - الطيبات" }, { name: "إبتدائية قعبي علي (بئر العسل) - الطيبات" }, { name: "إبتدائية الشهيد بالطاهر الطيب - الطيبات" }, { name: "إبتدائية المجاهد منصوري مبروك - الطيبات" }, { name: "إبتدائية الشهيد بن قلية عمر - الطيبات" }, { name: "إبتدائية المجاهد رواص أحمد - الطيبات" }, { name: "إبتدائية المجاهد دحدي مسعود - الطيبات" }, { name: "إبتدائية المجاهد خليفة خليفة - الطيبات" }, { name: "إبتدائية المجاهد براهمي براهيم - الطيبات" }, { name: "إبتدائية المجاهد بلخير السعيد - الطيبات" }, { name: "إبتدائية المجاهد لـيـتيم محمد (عثمان بن عفان) - الطيبات" }, { name: "إبتدائية المجاهد بالعجال معمر - الطيبات" }, { name: "إبتدائية المجاهد عماري التجاني الدليعي - الطيبات" }],
+  "العالية": [{ name: "إبتدائية الشهيد قوادري لخضر - العالية" }, { name: "إبتدائية قادري أحمد - العالية" }, { name: "إبتدائية الامام الغزالي بالعالية - العالية" }, { name: "إبتدائية الشهيد عبيدلي أحمد - العالية" }, { name: "إبتدائية سيدي عبد المالك - العالية" }, { name: "إبتدائية بن احمد احمد - العالية" }, { name: "إبتدائية طفحي مسعود ( العالية الجديدة ) - العالية" }, { name: "إبتدائية غبائشي بشير - العالية" }, { name: "إبتدائية المجاهد بساسي الطاهر - العالية" }, { name: "إبتدائية حمايمي ميلود - العالية" }, { name: "إبتدائية المجاهد حبي عمار - العالية" }, { name: "إبتدائية المجاهد ربروب محمد - العالية" }],
+  "المقارين": [{ name: "إبتدائية أسامة بن زيد - المقارين" }, { name: "إبتدائية بن موسى الطيب - المقارين" }, { name: "إبتدائية العقيد سي الحواس - المقارين" }, { name: "إبتدائية ابو عبيدة بن الجراح - المقارين" }, { name: "إبتدائية بشير خذران - المقارين" }, { name: "إبتدائية محمد شافو - المقارين" }, { name: "إبتدائية بركبية حسين - المقارين" }, { name: "إبتدائية الشهيد الشريف محمد بن عبد الله - المقارين" }, { name: "إبتدائية بابا سعيد حشاني ( المجمع المدرسي الجديد ) - المقارين" }, { name: "إبتدائية المجاهد بن الزاوي السعيد - المقارين" }, { name: "إبتدائية المجاهد جاوي محمد - المقارين" }],
+  "المنقر": [{ name: "إبتدائية محمد بوعسرية - المنقر" }, { name: "إبتدائية الشهيد مسماري الاخضر اللويبد - المنقر" }, { name: "إبتدائية الشهيد قبي بلقاسم - المنقر" }, { name: "إبتدائية العلامة بن الصديق علي - المنقر" }, { name: "إبتدائية الشهيد خورارة بشير - المنقر" }, { name: "إبتدائية شوية علي - المنقر" }, { name: "إبتدائية الشهيدبكاري السايح الشابي - المنقر" }, { name: "إبتدائية الشهيد محمد خيراني - المنقر" }, { name: "إبتدائية المجاهد احمد بن الصغير قويدري (البحري) - المنقر" }, { name: "إبتدائية الشلالقة( خورارة محمد) - المنقر" }, { name: "إبتدائية نواري محمد الزروق - المنقر" }, { name: "إبتدائية الشهيد دقعة محمد - المنقر" }, { name: "إبتدائية الشهيد محمد نواري( حي النخيل) - المنقر" }, { name: "إبتدائية محمد مايو - المنقر" }, { name: "إبتدائية غندير العايش - المنقر" }, { name: "إبتدائية الشهيد بله محمد الصغير - المنقر" }],
+  "النزلة": [{ name: "إبتدائية بن دلالي علي - النزلة" }, { name: "إبتدائية قادري أحمد سيدي ماضي - النزلة" }, { name: "إبتدائية بن عمر النوي - النزلة" }, { name: "إبتدائية بن طرية لمنور - النزلة" }, { name: "إبتدائية بوليفة محمد عمران - النزلة" }, { name: "إبتدائية تماسيني عبد الرحمن - النزلة" }, { name: "إبتدائية كدة بشير - النزلة" }, { name: "إبتدائية حركات العايش - النزلة" }, { name: "إبتدائية المجاهد طرية مخلوف - النزلة" }, { name: "إبتدائية المجاهد قمو محمد - النزلة" }, { name: "إبتدائية تمرني موسى - النزلة" }, { name: "إبتدائية المجاهد سلامي محمد - النزلة" }, { name: "إبتدائية نقودي محمد - النزلة" }, { name: "إبتدائية المجاهد العيفاوي التجاني - النزلة" }, { name: "إبتدائية المجاهد عقال عبد الحميد - النزلة" }, { name: "إبتدائية المجاهد عشاب محمد العيد - النزلة" }, { name: "إبتدائية المجاهد فرحي بحري - النزلة" }, { name: "إبتدائية الشيخ بوعمامة - النزلة" }, { name: "إبتدائية رحماني محمد بن محمد - النزلة" }, { name: "إبتدائية المجاهد كراش الأخضر - النزلة" }, { name: "إبتدائية المجاهد بن حميدة علي - النزلة" }, { name: "إبتدائية بن هدية جاب الله ( المستقبل2) - النزلة" }, { name: "إبتدائية المجاهد مشري غزال - النزلة" }, { name: "إبتدائية بن عاشور السبتي - النزلة" }, { name: "إبتدائية علوي حمزة - النزلة" }, { name: "إبتدائية المجاهد قمو محمود - النزلة" }],
+  "بلدة عمر": [{ name: "إبتدائية محمد البشير الإبراهيمي - بلدة اعمر" }, { name: "إبتدائية دحماني عبد الرحمان قوق - بلدة اعمر" }, { name: "إبتدائية بديار محمد - بلدة اعمر" }, { name: "إبتدائية المجاهد قادري موسى - بلدة اعمر" }, { name: "إبتدائية المجاهد الاخضري احمد - بلدة اعمر" }, { name: "إبتدائية المجاهد تمرني عمار(حي النهضة) - بلدة اعمر" }, { name: "إبتدائية المجاهد زروقي علي - بلدة اعمر" }, { name: "إبتدائية المجاهد حاجي عمر - بلدة اعمر" }, { name: "إبتدائية الشهيد مصطفى بن بولعيد قوق - بلدة اعمر" }, { name: "إبتدائية المجاهد شاشة محمد الصغير - بلدة اعمر" }],
+  "تبسبست": [{ name: "إبتدائية محمد عشبي - تبسبست" }, { name: "إبتدائية زنو عبد الحفيظ - تبسبست" }, { name: "إبتدائية جواد عمر (تبسبست الجنوبية ) - تبسبست" }, { name: "إبتدائية بن علي الاخضر (بني يسود القديمة) - تبسبست" }, { name: "إبتدائية جيلاني كينة - تبسبست" }, { name: "إبتدائية التجاني نصيري - تبسبست" }, { name: "إبتدائية بن دومة محمد الطاهر - تبسبست" }, { name: "إبتدائية جلابية عبد القادر - تبسبست" }, { name: "إبتدائية المجاهد أحمد شاوش - تبسبست" }, { name: "إبتدائية حي الصومام - تبسبست" }, { name: "إبتدائية المجاهد بوغرارة محمد الصالح - تبسبست" }, { name: "إبتدائية الفتح الجديدة (جرو بحري) - تبسبست" }, { name: "إبتدائية المجاهد العياط سعد - تبسبست" }, { name: "إبتدائية أول نوفمبر 1954 - تبسبست" }, { name: "إبتدائية المجاهد رمون جلول حي فرجمون - تبسبست" }],
+  "توقرت": [{ name: "إبتدائية بن خلدون - تقرت" }, { name: "إبتدائية الخنساء - تقرت" }, { name: "إبتدائية الشيخ الطاهر العبيدي - تقرت" }, { name: "إبتدائية عظامو محمد البحري - تقرت" }, { name: "إبتدائية الطالب بابا - تقرت" }, { name: "إبتدائية الإمام الشافعي - تقرت" }, { name: "إبتدائية الامام مالك - تقرت" }, { name: "إبتدائية عبيدلي أحمد - تقرت" }, { name: "إبتدائية عيادي علي - تقرت" }, { name: "إبتدائية ناصر بشير - تقرت" }, { name: "إبتدائية المجاهد موهوبي سليمان - تقرت" }, { name: "إبتدائية المجاهد احمد بورنان - تقرت" }, { name: "إبتدائية بن الصديق عبد الهادي (الرمال 1) - تقرت" }, { name: "إبتدائية الشهيد زابي عبد العالي - تقرت" }, { name: "إبتدائية الأمير عبد القادر الجديدة - تقرت" }, { name: "إبتدائية ميعادي محمد فخر الدين - تقرت" }, { name: "إبتدائية تاتاي محمد الصادق (الرمال 02) - تقرت" }, { name: "إبتدائية المجاهد كافي عبد الرحيم - تقرت" }, { name: "إبتدائية المجاهد عظامو محمد - تقرت" }, { name: "إبتدائية بولعراس ابراهيم - تقرت" }, { name: "إبتدائية حي النضال مجمع مدرسي حي 1190 مسكن - تقرت" }, { name: "إبتدائية عمان يوسف - تقرت" }, { name: "إبتدائية دباخ أحمد المستقبل الجنوبي 7 - تقرت" }, { name: "إبتدائية بالعيد مشري المستقبل الشمالي - تقرت" }, { name: "إبتدائية دباغ عمر المستقبل الجنوبي 09 - تقرت" }, { name: "إبتدائية تاتاي عبد القادر - تقرت" }, { name: "إبتدائية الشهيد بالطاهر علي المستقبل الشمالي - تقرت" }, { name: "إبتدائية المجاهد قادري علال حي 700 مسكن - تقرت" }],
+  "سيدي سليمان": [{ name: "إبتدائية بوسعادة بن دلالي - سيدي سليمان" }, { name: "إبتدائية العربي التبسي - سيدي سليمان" }, { name: "إبتدائية الطيب بوريالة - سيدي سليمان" }, { name: "إبتدائية بركبية محمد بكار - سيدي سليمان" }, { name: "إبتدائية الشهيد بن قطان السايح - سيدي سليمان" }, { name: "إبتدائية باسو السعيد - سيدي سليمان" }],
+  "تماسين": [{ name: "إبتدائية مولود فرعون - نماسين" }, { name: "إبتدائية الطالب السعدي بوخندق - نماسين" }, { name: "إبتدائية الشيخ الصغير التجاني - نماسين" }, { name: "إبتدائية الشيخ الصادق التجاني - نماسين" }, { name: "إبتدائية البشيرتاتي - نماسين" }, { name: "إبتدائية المجاهد بكوش محمد العيد - نماسين" }, { name: "إبتدائية المجاهد رزقان احمد - نماسين" }, { name: "إبتدائية المجاهد لبسيس إبراهيم - نماسين" }, { name: "إبتدائية بوبكري بشير - نماسين" }, { name: "إبتدائية بن قانة براهيم (البحور 2) - نماسين" }, { name: "إبتدائية المجاهد تجاني عبد الحق (حي الكودية ) - نماسين" }]
+};
+
+// متغير لتتبع وضع التعديل
+let isEditMode = false;
+let originalRegistrationDate = null; // تاريخ التسجيل الأصلي
+let originalModificationDate = null; // تاريخ التعديل الأصلي (إن وجد)
+let currentModificationDate = null; // تاريخ التعديل الحالي (الذي يتم إنشاؤه عند التعديل)
+let spouseLookupTimeout = null;
+
+function buildLoanFormTemplate({ title, personData, buttonText }) {
+  return `
+    <h2 style="margin-bottom:12px;">${title}</h2>
+
+    <div class="section-box employee-box">
+      <div class="section-title"><i class="fa-solid fa-user-tie"></i> معلومات الموظف</div>
+      <div class="row">
+        <div class="col"><label>رقم التعريف</label><input type="text" id="empIdField" value="${escapeHtml(personData.empId || '')}" readonly></div>
+        <div class="col"><label>الاسم الكامل</label><input type="text" id="nameField" value="${escapeHtml(personData.name || '')}" readonly></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>الرتبة</label><input type="text" id="gradeField" value="${escapeHtml(personData.grade || '')}" readonly></div>
+        <div class="col"><label>مكان العمل</label><input type="text" id="placeField" value="${escapeHtml(personData.place || '')}" readonly></div>
+      </div>
+      <div class="row">
+        <div class="col">
+          <label>دائرة العمل</label>
+          <select id="daairaField">
+            <option value="">اختر الدائرة</option>
+            <option value="توقرت">توقرت</option><option value="تماسين">تماسين</option>
+            <option value="المقارين">المقارين</option><option value="الحجيرة">الحجيرة</option>
+            <option value="الطيبات">الطيبات</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>بلدية العمل</label>
+          <select id="baladiyaField"><option value="">اختر البلدية</option></select>
+        </div>
+      </div>
+      <div>
+        <label>رقم الهاتف</label>
+        <input type="text" id="personalPhoneField" value="${escapeHtml(personData.personalPhone || '')}" placeholder="00 00 00 00 00" oninput="formatPhoneSimple(this)" dir="ltr">
+      </div>
+    </div>
+
+   <div class="section-box child-box">
+      <div class="section-title"><i class="fa-solid fa-plane"></i> معلومات الإبن (المشارك في المخيم الصيفي)</div>
+      
+      <div>
+        <label>اسم ولقب الإبن(ة)</label>
+        <input type="text" id="childFullNameField" value="${escapeHtml(personData.childFullName || '')}" placeholder="أدخل الاسم واللقب بالعربية" oninput="validateArabicOnly(this)">
+      </div>
+
+      <div>
+         <label>تاريخ ميلاد الإبن</label>
+         <div class="pro-date-picker">
+           <select id="childDay" onchange="updateHiddenDate('child')"><option value="">اليوم</option></select>
+           <select id="childMonth" onchange="updateDays('child')"><option value="">الشهر</option></select>
+           <select id="childYear" onchange="updateDays('child')"><option value="">السنة</option></select>
+         </div>
+         <input type="hidden" id="childBirthDateField" value="${escapeHtml(personData.childBirthDate || '')}">
+      </div>
+
+      <div class="row">
+        <div class="col">
+           <label>السن (محسوب تلقائياً)</label>
+           <input type="text" id="displayAgeField" readonly placeholder="يُحسب تلقائياً" style="background-color: #f5f5f5; font-weight: bold; color: #333; text-align: center;">
+        </div>
+        <div class="col">
+           <label>الحالة (يتيم)</label>
+           <select id="isOrphanField">
+              <option value="" disabled ${!personData.isOrphan ? 'selected' : ''}>-- اختر نعم أو لا --</option>
+              <option value="لا" ${personData.isOrphan === 'لا' ? 'selected' : ''}>لا</option>
+              <option value="نعم" ${personData.isOrphan === 'نعم' ? 'selected' : ''}>نعم</option>
+           </select>
+        </div>
+      </div>
+
+
+      <div class="row">
+        <div class="col">
+          <label>دائرة التمدرس</label>
+          <select id="childDaairaField" onchange="onChildDaairaChange()">
+              <option value="">اختر الدائرة</option>
+              <option value="توقرت">توقرت</option><option value="تماسين">تماسين</option>
+              <option value="المقارين">المقارين</option><option value="الحجيرة">الحجيرة</option>
+              <option value="الطيبات">الطيبات</option>
+          </select>
+        </div>
+
+        <div class="col">
+           <label>بلدية التمدرس</label>
+           <select id="childBaladiyaField" onchange="updateChildSchools()">
+             <option value="">اختر البلدية</option>
+           </select>
+        </div>
+      </div>
+
+      <div>
+        <label>المستوى الدراسي</label>
+        <select id="categoryField" onchange="onChildLevelChange()">
+          <option value="">-- اختر المستوى --</option>
+          <option value="متوسط" ${personData.category === 'متوسط' ? 'selected' : ''}>متوسط</option>
+          <option value="إبتدائي" ${personData.category === 'إبتدائي' ? 'selected' : ''}>إبتدائي</option>
+        </select>
+      </div>
+
+      <div>
+        <label>مؤسسة التمدرس</label>
+        <select id="childSchoolField"><option value="">يرجى اختيار الدائرة والمستوى</option></select>
+      </div>
+
+      <div class="row">
+        <div class="col">
+          <label>المعدل السنوي</label>
+         <input type="number" step="0.01" min="1" max="20" id="childAgeField" value="${escapeHtml(personData.childAge || '')}" placeholder="مثال: 15.50">
+        </div>
+        
+      <div class="col">
+          <label>الرحلة</label>
+          <select id="tripField">
+            <option value="" disabled ${!personData.trip ? 'selected' : ''}>-- اختر الرحلة --</option>
+            <option value="المخيم الصيفي" ${personData.trip === 'المخيم الصيفي' ? 'selected' : ''}>المخيم الصيفي</option>
+          </select>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="small-note">تأكد من صحة البيانات قبل الإرسال</div>
+    <button id="submitBtn" onclick="submitForm()">${buttonText}</button>
+  `;
+}
+
+function showForm(empId, data) {
+  isEditMode = false;
+  // إعادة تعيين التواريخ عند فتح نموذج تسجيل جديد
+  originalRegistrationDate = null;
+  originalModificationDate = null;
+  currentModificationDate = null;
+  const container = document.getElementById("mainContainer");
+  container.innerHTML = buildLoanFormTemplate({
+    title: "استمارة تسجيل أبناء القطاع (الموظفين) في المخيم الصيفي",
+    personData: {
+        empId, name: data.name || '', grade: data.grade || '', place: data.place || '',
+        trip: '', personalPhone: '', childFullName: '', childBirthDate: '',
+        childAge: '', isOrphan: '', category: ''
+      },
+    buttonText: "تسجيل"
+  });
+
+  initializeForm();
+  populateDateSelects();
+}
+
+// دالة لتهيئة الاستمارة
+function initializeForm() {
+  const daairaField = document.getElementById("daairaField");
+  if (daairaField) {
+    daairaField.addEventListener("change", () => updateBaladiya());
+  }
+  
+  const childBirthDateField = document.getElementById("childBirthDateField");
+  if (childBirthDateField) {
+    childBirthDateField.addEventListener("change", calculateChildAge);
+  }
+}
+
+// دالة لعرض الاستمارة في وضع التعديل
+// دالة لعرض الاستمارة في وضع التعديل
+function showEditForm(empId, firebaseData, existingData) {
+  isEditMode = true;
+  // حفظ تاريخ التسجيل الأصلي وتاريخ التعديل الأصلي
+  originalRegistrationDate = existingData.date || null;
+  originalModificationDate = existingData.modificationDate || null;
+  const container = document.getElementById("mainContainer");
+  container.innerHTML = buildLoanFormTemplate({
+    title: "تعديل بيانات التسجيل في المخيم الصيفي",
+    personData: {
+      empId, name: firebaseData.name || '', grade: firebaseData.grade || '', place: firebaseData.place || '',
+      trip: existingData.trip || '', personalPhone: existingData.personalPhone ? formatPhoneNumber(existingData.personalPhone) : '',
+      childFullName: existingData.childFullName || '', childBirthDate: existingData.childBirthDate || '',
+      childAge: existingData.childAge || '', isOrphan: existingData.isOrphan || '', category: existingData.category || ''
+    },
+    buttonText: "حفظ التعديلات"
+  });
+
+  initializeForm();
+  populateDateSelects();
+
+ setTimeout(() => {
+    // 1. ملء دائرة وبلدية العمل (الموظف)
+    const daairaField = document.getElementById("daairaField");
+    if (daairaField) {
+      daairaField.value = existingData.daira ? String(existingData.daira).trim() : "";
+      daairaField.addEventListener("change", () => updateBaladiya());
+      updateBaladiya(existingData.baladiya ? String(existingData.baladiya).trim() : "");
+    }
+    
+    const baladiyaField = document.getElementById("baladiyaField");
+    if (baladiyaField) baladiyaField.value = existingData.baladiya ? String(existingData.baladiya).trim() : "";
+
+    // 2. ملء الفئة والرحلة ومعدل الفصل والحالة يتيم
+    const categoryField = document.getElementById("categoryField");
+    if (categoryField) categoryField.value = existingData.category ? String(existingData.category).trim() : "";
+    
+    const tripField = document.getElementById("tripField");
+    if (tripField) tripField.value = existingData.trip ? String(existingData.trip).trim() : "";
+
+    const childAgeField = document.getElementById("childAgeField");
+    if (childAgeField) childAgeField.value = existingData.childAge ? String(existingData.childAge).trim() : "";
+
+    const isOrphanField = document.getElementById("isOrphanField");
+    if (isOrphanField) isOrphanField.value = existingData.isOrphan ? String(existingData.isOrphan).trim() : "لا";
+
+    // 3. ملء اسم الإبن
+    const childFullNameField = document.getElementById("childFullNameField");
+    if (childFullNameField) {
+      childFullNameField.value = existingData.childFullName || "";
+    }
+
+    // 4. استرجاع تاريخ ميلاد الإبن
+    const birthDate = existingData.childBirthDate || "";
+    if (birthDate) setDateSelects(birthDate, 'child');
+
+    // 5. استرجاع دائرة وبلدية ومؤسسة تمدرس الإبن
+    const childDaairaField = document.getElementById("childDaairaField");
+    if (childDaairaField && existingData.childDaaira) {
+        childDaairaField.value = String(existingData.childDaaira).trim();
+        onChildDaairaChange(); // يقوم بتحديث قائمة البلديات والمدارس بناءً على الدائرة
+        
+        const childBaladiyaField = document.getElementById("childBaladiyaField");
+        if (childBaladiyaField && existingData.childBaladiya) {
+            childBaladiyaField.value = String(existingData.childBaladiya).trim();
+        }
+    }
+    
+   
+    updateChildSchools(existingData.schoolName ? String(existingData.schoolName).trim() : "");
+
+  }, 300); 
+}
+
+/* عند تغيير الطور أو الدائرة - تحديث سلوك اسم المؤسسة والقوائم */
+function handleSpouseInput() {
+  const dualField = document.getElementById("dualSectorField");
+  if (!dualField || dualField.value !== "نعم") return;
+
+  const spouseIdField = document.getElementById("spouseIdField");
+  const statusMessage = document.getElementById("spouseStatusMessage");
+  const spouseNameWrapper = document.getElementById("spouseNameWrapper");
+  const spouseNameField = document.getElementById("spouseNameField");
+
+  if (!spouseIdField || !statusMessage) return;
+
+  const value = spouseIdField.value.trim();
+
+  if (spouseNameWrapper) spouseNameWrapper.style.display = "none";
+  if (spouseNameField) spouseNameField.value = "";
+
+  if (!value) {
+    statusMessage.style.display = "none";
+    statusMessage.textContent = "";
+    if (spouseLookupTimeout) {
+      clearTimeout(spouseLookupTimeout);
+      spouseLookupTimeout = null;
+    }
+    return;
+  }
+
+  statusMessage.style.display = "block";
+  statusMessage.textContent = "⏳ جاري البحث عن معلومات الزوج(ة)...";
+
+  if (value.length < 16) {
+    if (spouseLookupTimeout) {
+      clearTimeout(spouseLookupTimeout);
+      spouseLookupTimeout = null;
+    }
+    return;
+  }
+
+  if (spouseLookupTimeout) {
+    clearTimeout(spouseLookupTimeout);
+  }
+  spouseLookupTimeout = setTimeout(() => {
+    spouseLookupTimeout = null;
+    verifySpouseInFirebase();
+  }, 400);
+}
+
+function toggleChildrenField() {
+  const maritalField = document.getElementById("maritalStatusField");
+  const wrapper = document.getElementById("childrenCountWrapper");
+  const childrenField = document.getElementById("childrenCountField");
+  const dualSectorWrapper = document.getElementById("dualSectorWrapper");
+  const dualSectorField = document.getElementById("dualSectorField");
+  const spouseIdWrapper = document.getElementById("spouseIdWrapper");
+  const spouseIdField = document.getElementById("spouseIdField");
+  const spouseNameWrapper = document.getElementById("spouseNameWrapper");
+  const spouseNameField = document.getElementById("spouseNameField");
+  const statusMessage = document.getElementById("spouseStatusMessage");
+  if (!maritalField || !wrapper || !childrenField) return;
+
+  const needsChildren = ["متزوج(ة)", "مطلق(ة)"].includes(maritalField.value);
+  wrapper.style.display = needsChildren ? "block" : "none";
+
+  if (!needsChildren) {
+    childrenField.value = "";
+  }
+
+  if (dualSectorWrapper) {
+    const showDualSector = ["متزوج(ة)", "مطلق(ة)"].includes(maritalField.value);
+    dualSectorWrapper.style.display = showDualSector ? "block" : "none";
+
+    if (!showDualSector) {
+      if (dualSectorField) dualSectorField.value = "";
+      if (spouseIdWrapper) spouseIdWrapper.style.display = "none";
+      if (spouseIdField) spouseIdField.value = "";
+      if (spouseNameWrapper) spouseNameWrapper.style.display = "none";
+      if (spouseNameField) spouseNameField.value = "";
+      if (statusMessage) {
+        statusMessage.style.display = "none";
+        statusMessage.textContent = "";
+    }
+    }
+  }
+}
+
+function toggleDualSector() {
+  const dualField = document.getElementById("dualSectorField");
+  const wrapper = document.getElementById("spouseIdWrapper");
+  const spouseIdField = document.getElementById("spouseIdField");
+  const spouseNameWrapper = document.getElementById("spouseNameWrapper");
+  const spouseNameField = document.getElementById("spouseNameField");
+  const statusMessage = document.getElementById("spouseStatusMessage");
+
+  if (!dualField || !wrapper || !spouseIdField || !spouseNameWrapper || !spouseNameField || !statusMessage) return;
+
+  if (dualField.value === "نعم") {
+    wrapper.style.display = "block";
+        } else {
+    wrapper.style.display = "none";
+    spouseIdField.value = "";
+    spouseNameWrapper.style.display = "none";
+    spouseNameField.value = "";
+    statusMessage.style.display = "none";
+    statusMessage.textContent = "";
+    if (spouseLookupTimeout) {
+      clearTimeout(spouseLookupTimeout);
+      spouseLookupTimeout = null;
+        }
+  }
+}
+
+function toggleFileSeniority() {
+  const fileField = document.getElementById("fileSeniorityField");
+  const yearWrapper = document.getElementById("depositYearWrapper");
+  const yearSelect = document.getElementById("depositYearSelect");
+  const yearField = document.getElementById("depositYearField");
+  const countWrapper = document.getElementById("depositCountWrapper");
+  const countField = document.getElementById("depositCountField");
+  if (!fileField || !yearWrapper || !yearField) return;
+
+  const shouldShow = fileField.value === "نعم";
+  yearWrapper.style.display = shouldShow ? "block" : "none";
+  if (yearSelect) yearSelect.disabled = !shouldShow;
+  if (countWrapper) countWrapper.style.display = shouldShow ? "block" : "none";
+
+  if (!shouldShow) {
+    resetDepositYearSelection();
+    if (countField) countField.value = "";
+  }
+}
+
+function setupDepositYearSelector() {
+  const select = document.getElementById("depositYearSelect");
+  const tagsContainer = document.getElementById("depositYearTags");
+  if (select) {
+    select.addEventListener("change", () => {
+      const value = select.value;
+      if (!value) return;
+      addDepositYear(value);
+      select.value = "";
+    });
+  }
+  if (tagsContainer) {
+    tagsContainer.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-year]");
+      if (!target || !target.classList.contains("tag-remove")) return;
+      const year = target.getAttribute("data-year");
+      removeDepositYear(year);
+    });
+  }
+}
+
+function getDepositYearValues() {
+  const field = document.getElementById("depositYearField");
+  if (!field) return [];
+  const data = field.dataset.years;
+  if (!data) return [];
+  try {
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return field.value
+      ? field.value.split(",").map(year => year.trim()).filter(Boolean)
+      : [];
+  }
+}
+
+function parseDepositYears(source) {
+  if (!source && source !== 0) return [];
+  if (Array.isArray(source)) {
+    return source.map(item => String(item).trim()).filter(Boolean);
+  }
+  return String(source)
+    .split(",")
+    .map(part => part.trim())
+    .filter(Boolean);
+}
+
+function setDepositYears(years = []) {
+  const field = document.getElementById("depositYearField");
+  if (!field) return;
+  const normalized = Array.from(new Set(years.map(year => String(year).trim()).filter(Boolean)));
+  field.dataset.years = JSON.stringify(normalized);
+  field.value = normalized.length ? normalized.join(", ") : "";
+  renderDepositYearTags(normalized);
+}
+
+function addDepositYear(year) {
+  const current = getDepositYearValues();
+  if (current.includes(year)) return;
+  current.push(year);
+  setDepositYears(current);
+}
+
+function removeDepositYear(year) {
+  const filtered = getDepositYearValues().filter(item => item !== year);
+  setDepositYears(filtered);
+}
+
+function resetDepositYearSelection() {
+  setDepositYears([]);
+}
+
+function renderDepositYearTags(years = []) {
+  const container = document.getElementById("depositYearTags");
+  if (!container) return;
+  if (!years.length) {
+    container.innerHTML = `<span class="small-note" style="border:none;margin-top:0;">لم يتم اختيار سنة</span>`;
+    return;
+  }
+  container.innerHTML = years.map(year => `
+    <span class="deposit-tag" data-year="${year}">
+      ${year}
+      <span class="tag-remove" data-year="${year}" role="button" aria-label="حذف السنة ${year}">✕</span>
+    </span>
+  `).join("");
+}
+
+async function verifySpouseInFirebase() {
+  const dualField = document.getElementById("dualSectorField");
+  if (!dualField || dualField.value !== "نعم") return;
+
+  const spouseIdField = document.getElementById("spouseIdField");
+  const statusMessage = document.getElementById("spouseStatusMessage");
+  const spouseNameWrapper = document.getElementById("spouseNameWrapper");
+  const spouseNameField = document.getElementById("spouseNameField");
+
+  if (!spouseIdField || !statusMessage || !spouseNameWrapper || !spouseNameField) return;
+
+  const spouseId = spouseIdField.value.trim();
+
+  spouseNameField.value = "";
+  spouseNameWrapper.style.display = "none";
+  statusMessage.style.display = "none";
+  statusMessage.textContent = "";
+
+  if (!spouseId) return;
+
+  if (spouseId.length !== 16) {
+    statusMessage.style.display = "block";
+    statusMessage.textContent = "يجب أن يتكون رقم التعريف من 16 رقمًا.";
+    return;
+  }
+
+  statusMessage.style.display = "block";
+  statusMessage.textContent = "جاري التحقق من الرقم...";
+
+  try {
+    let spouseData = null;
+    const docRef = db.collection("employeescomplus").doc(spouseId);
+    const docSnap = await docRef.get();
+
+    if (docSnap.exists) {
+      spouseData = docSnap.data();
+      } else {
+      const querySnap = await db.collection("employeescomplus")
+        .where("empId", "==", spouseId)
+        .limit(1)
+        .get();
+      if (!querySnap.empty) {
+        spouseData = querySnap.docs[0].data();
+      }
+    }
+
+    if (!spouseData) {
+      statusMessage.textContent = "لم يتم العثور على رقم التعريف في قاعدة البيانات.";
+      return;
+    }
+
+    spouseNameField.value = spouseData.name || "";
+    spouseNameWrapper.style.display = "block";
+    statusMessage.textContent = "تم التحقق بنجاح.";
+  } catch (error) {
+    console.error("Spouse verification error:", error);
+    statusMessage.textContent = "تعذر التحقق من قاعدة البيانات.";
+  }
+}
+
+function updateBaladiya(selectedBaladiya = "") {
+  const daairaField = document.getElementById("daairaField");
+  const baladiyaSelect = document.getElementById("baladiyaField");
+
+  if (!daairaField || !baladiyaSelect) return;
+
+  const daaira = daairaField.value;
+  baladiyaSelect.innerHTML = '<option value="">اختر البلدية</option>';
+
+  if (daaira && window.baladiyaMap[daaira]) {
+    window.baladiyaMap[daaira].forEach(b => {
+      const option = document.createElement("option");
+      option.value = b;
+      option.text = b;
+      baladiyaSelect.add(option);
+    });
+  }
+
+  if (selectedBaladiya) {
+    baladiyaSelect.value = selectedBaladiya;
+  }
+}
+
+function validateArabicOnly(input) { input.value = input.value.replace(/[^\u0600-\u06FF\s]/g, ''); }
+
+function populateDateSelects() {
+    const monthsNames = ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    let monthsHtml = '<option value="">الشهر</option>';
+    monthsNames.forEach((m, i) => { monthsHtml += `<option value="${(i+1).toString().padStart(2,'0')}">${m}</option>`; });
+    let yearsHtml = '<option value="">السنة</option>';
+    for(let i = 2026; i >= 2005; i--) { yearsHtml += `<option value="${i}">${i}</option>`; }
+    if(document.getElementById('childMonth')) {
+        document.getElementById('childMonth').innerHTML = monthsHtml;
+        document.getElementById('childYear').innerHTML = yearsHtml;
+        updateDays('child');
+    }
+}
+
+function updateDays(type) {
+    const yearSelect = document.getElementById(type + 'Year');
+    const monthSelect = document.getElementById(type + 'Month');
+    const daySelect = document.getElementById(type + 'Day');
+    const selectedYear = parseInt(yearSelect.value) || 2024;
+    const selectedMonth = parseInt(monthSelect.value) || 1;
+    const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+    const currentDay = daySelect.value;
+    daySelect.innerHTML = '<option value="">اليوم</option>';
+    for (let d = 1; d <= daysInMonth; d++) {
+        let val = d.toString().padStart(2, '0');
+        daySelect.innerHTML += `<option value="${val}">${val}</option>`;
+    }
+    if (currentDay && currentDay <= daysInMonth) daySelect.value = currentDay;
+    updateHiddenDate(type);
+}
+
+function updateHiddenDate(type) {
+    const y = document.getElementById(type + 'Year').value;
+    const m = document.getElementById(type + 'Month').value;
+    const d = document.getElementById(type + 'Day').value;
+    let hiddenField = document.getElementById('childBirthDateField');
+    
+    if (y && m && d) { 
+        hiddenField.value = `${y}-${m}-${d}`; 
+    } else { 
+        hiddenField.value = ""; 
+    }
+    
+    // استدعاء دالة حساب السن فور اكتمال التاريخ
+    if(type === 'child') {
+        calculateChildAge();
+    }
+}
+
+function setDateSelects(dateStr, type) {
+    if(!dateStr) return;
+    let parts = dateStr.split('-');
+    if(parts.length === 3) {
+        if(parts[0].length === 4) { 
+            document.getElementById(type + 'Year').value = parts[0]; document.getElementById(type + 'Month').value = parts[1]; updateDays(type); document.getElementById(type + 'Day').value = parts[2];
+        } else if(parts[2].length === 4) { 
+            document.getElementById(type + 'Day').value = parts[0]; document.getElementById(type + 'Month').value = parts[1]; document.getElementById(type + 'Year').value = parts[2]; updateDays(type); document.getElementById(type + 'Day').value = parts[0];
+        }
+        updateHiddenDate(type);
+    }
+}
+
+function onChildDaairaChange() {
+    const daaira = document.getElementById("childDaairaField").value;
+    const baladiyaSelect = document.getElementById("childBaladiyaField");
+    baladiyaSelect.innerHTML = '<option value="">اختر البلدية</option>';
+    if (daaira && window.baladiyaMap[daaira]) {
+        window.baladiyaMap[daaira].forEach(b => {
+            const opt = document.createElement("option"); opt.value = b; opt.text = b; baladiyaSelect.add(opt);
+        });
+    }
+    updateChildSchools();
+}
+
+function onChildLevelChange() { updateChildSchools(); }
+
+function updateChildSchools(savedSchool = "") {
+    const daaira = document.getElementById("childDaairaField") ? document.getElementById("childDaairaField").value : "";
+    const baladiya = document.getElementById("childBaladiyaField") ? document.getElementById("childBaladiyaField").value : "";
+    const levelField = document.getElementById("categoryField") ? document.getElementById("categoryField").value : "";
+    const schoolSelect = document.getElementById("childSchoolField");
+    
+    if(!schoolSelect) return;
+    schoolSelect.innerHTML = '<option value="">اختر المؤسسة</option>';
+    
+    if (!levelField) return;
+
+    // استخلاص وتصنيف المستوى المختار من القائمة
+    let mappedLevel = "";
+    if (levelField.includes("إبتدائي") || levelField === "إبتدائي") {
+        mappedLevel = "إبتدائي";
+    } else if (levelField.includes("متوسط") || levelField === "متوسط") {
+        mappedLevel = "متوسط";
+    } else if (levelField.includes("ثانوي") || levelField === "ثانوي") {
+        mappedLevel = "ثانوي";
+    }
+
+    if (mappedLevel === "إبتدائي") {
+        // إذا كان إبتدائي، المدرسة تظهر بناءً على [البلدية]
+        if (!baladiya) {
+            schoolSelect.innerHTML = '<option value="">يرجى اختيار البلدية أولاً</option>';
+            return;
+        }
+        // تنظيف اسم البلدية لضمان التطابق مع المصفوفة (مثل توحيد "بلدة عمر" و "بلدة اعمر" إن وجد اختلاف)
+        let cleanBaladiya = baladiya;
+        if(cleanBaladiya === "بلدة عمر") cleanBaladiya = "بلدة عمر"; 
+
+        if (window.primarySchoolsByBaladiya && window.primarySchoolsByBaladiya[cleanBaladiya]) {
+            window.primarySchoolsByBaladiya[cleanBaladiya].forEach(s => {
+                const opt = document.createElement("option"); 
+                opt.value = s.name; 
+                opt.text = s.name; 
+                schoolSelect.add(opt);
+            });
+        }
+    } else {
+        // إذا كان متوسط أو ثانوي، المدرسة تظهر بناءً على [الدائرة]
+        if (!daaira) return;
+        if (window.institutionsByDaaira && window.institutionsByDaaira[daaira] && window.institutionsByDaaira[daaira][mappedLevel]) {
+            window.institutionsByDaaira[daaira][mappedLevel].forEach(s => {
+                const opt = document.createElement("option"); 
+                opt.value = s.name; 
+                opt.text = s.name; 
+                schoolSelect.add(opt);
+            });
+        }
+    }
+    
+    if(savedSchool) schoolSelect.value = savedSchool;
+}
+
+
+// دالة لحساب السن تلقائياً من تاريخ الميلاد
+function calculateChildAge() {
+  const birthDateField = document.getElementById("childBirthDateField");
+  const ageDisplay = document.getElementById("displayAgeField"); // الحقل الجديد للسن
+  
+  if (!birthDateField || !ageDisplay) return;
+  
+  const birthDateStr = birthDateField.value;
+  if (!birthDateStr) {
+    ageDisplay.value = "";
+    return;
+  }
+  
+  try {
+    const birthDate = new Date(birthDateStr);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    // عرض السن في الحقل
+    ageDisplay.value = age >= 0 ? age + " سنة" : "";
+    
+    // ✅ التحقق من السن (بين 7 و 12 سنة تماماً)
+    if (age >= 0) {
+      if (age < 7 || age > 12) {
+        // تنسيق الحقل باللون الأحمر دلالة على الرفض
+        ageDisplay.style.border = "2px solid #dc3545";
+        ageDisplay.style.backgroundColor = "#fff5f5";
+        ageDisplay.style.color = "#dc3545";
+        
+        // عرض تحذير للمستخدم
+        setTimeout(() => {
+          Swal.fire({
+            icon: "warning",
+            title: "تنبيه (السن غير مسموح)",
+            text: "لا يمكن تسجيل الإبن إلا إذا كان سنه يتراوح بين 7 و 12 سنة تماماً.",
+            confirmButtonText: "حسناً"
+          });
+        }, 300);
+      } else {
+        // إعادة الحقل للون الأخضر دلالة على القبول
+        ageDisplay.style.border = "2px solid #28a745";
+        ageDisplay.style.backgroundColor = "#eafbf0";
+        ageDisplay.style.color = "#28a745";
+      }
+    }
+  } catch (error) {
+    console.error("Error calculating age:", error);
+    ageDisplay.value = "";
+  }
+}
+
+/* تنسيق رقم الهاتف على شكل 00 00 00 00 00 */
+function formatPhoneSimple(input) {
+  // إزالة كل شيء ما عدا الأرقام
+  let value = input.value.replace(/\D/g, '');
+  
+  // تحديد إلى 10 أرقام
+  value = value.slice(0, 10);
+  
+  // تنسيق على شكل 00 00 00 00 00
+  if (value.length > 0) {
+    let formatted = '';
+    for (let i = 0; i < value.length; i++) {
+      if (i > 0 && i % 2 === 0) {
+        formatted += ' ';
+      }
+      formatted += value[i];
+    }
+    input.value = formatted;
+  } else {
+    input.value = '';
+  }
+}
+
+/* تنسيق رقم الهاتف الثابت على شكل 000 00 00 00 (9 أرقام) */
+function formatFixedPhone(input) {
+  // إزالة كل شيء ما عدا الأرقام
+  let value = input.value.replace(/\D/g, '');
+  
+  // تحديد إلى 9 أرقام
+  value = value.slice(0, 9);
+  
+  // تنسيق على شكل 000 00 00 00
+  if (value.length > 0) {
+    let formatted = '';
+    // أول 3 أرقام
+    if (value.length >= 3) {
+      formatted = value.slice(0, 3);
+      if (value.length > 3) {
+        formatted += ' ' + value.slice(3, 5);
+        if (value.length > 5) {
+          formatted += ' ' + value.slice(5, 7);
+          if (value.length > 7) {
+            formatted += ' ' + value.slice(7, 9);
+          }
+        }
+      }
+    } else {
+      formatted = value;
+    }
+    input.value = formatted;
+  } else {
+    input.value = '';
+  }
+}
+
+/* دالة لتنسيق رقم الهاتف من رقم عادي إلى تنسيق 00 00 00 00 00 */
+function formatPhoneNumber(phone) {
+  if (!phone) return '';
+  // إزالة علامة الاقتباس في البداية إن وجدت (من Google Sheets)
+  let phoneStr = String(phone).replace(/^'/, '');
+  // إزالة كل شيء ما عدا الأرقام والمسافات
+  let value = phoneStr.replace(/[^\d\s]/g, '');
+  // إزالة المسافات ثم إعادة التنسيق
+  value = value.replace(/\s/g, '');
+  // تحديد إلى 10 أرقام
+  value = value.slice(0, 10);
+  // تنسيق على شكل 00 00 00 00 00
+  if (value.length === 10) {
+    return value.slice(0, 2) + ' ' + value.slice(2, 4) + ' ' + 
+           value.slice(4, 6) + ' ' + value.slice(6, 8) + ' ' + value.slice(8, 10);
+  } else if (value.length > 0) {
+    // إذا كان الرقم أقل من 10 أرقام، ننسقه كما هو
+    let formatted = '';
+    for (let i = 0; i < value.length; i++) {
+      if (i > 0 && i % 2 === 0) {
+        formatted += ' ';
+      }
+      formatted += value[i];
+    }
+    return formatted;
+  }
+  return '';
+}
+
+/* دالة لتنسيق رقم الهاتف الثابت من رقم عادي إلى تنسيق 000 00 00 00 */
+function formatFixedPhoneNumber(phone) {
+  if (!phone) return '';
+  // إزالة علامة الاقتباس في البداية إن وجدت (من Google Sheets)
+  let phoneStr = String(phone).replace(/^'/, '');
+  // إزالة كل شيء ما عدا الأرقام والمسافات
+  let value = phoneStr.replace(/[^\d\s]/g, '');
+  // إزالة المسافات ثم إعادة التنسيق
+  value = value.replace(/\s/g, '');
+  // تحديد إلى 9 أرقام
+  value = value.slice(0, 9);
+  // تنسيق على شكل 000 00 00 00
+  if (value.length === 9) {
+    return value.slice(0, 3) + ' ' + value.slice(3, 5) + ' ' + 
+           value.slice(5, 7) + ' ' + value.slice(7, 9);
+  } else if (value.length > 0) {
+    // إذا كان الرقم أقل من 9 أرقام، ننسقه تدريجياً
+    let formatted = '';
+    if (value.length >= 3) {
+      formatted = value.slice(0, 3) + ' ';
+      if (value.length >= 5) {
+        formatted += value.slice(3, 5) + ' ';
+        if (value.length >= 7) {
+          formatted += value.slice(5, 7) + ' ';
+          if (value.length >= 9) {
+            formatted += value.slice(7, 9);
+          } else {
+            formatted += value.slice(7);
+          }
+        } else {
+          formatted += value.slice(5);
+        }
+      } else {
+        formatted += value.slice(3);
+      }
+    } else {
+      formatted = value;
+    }
+    return formatted;
+  }
+  return '';
+}       
+
+function snapshotFormValues() {
+  const val = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  };
+
+  return {
+    empId: val("empIdField"),
+    name: val("nameField"),
+    grade: val("gradeField"),
+    place: val("placeField"),
+    daira: val("daairaField"),
+    baladiya: val("baladiyaField"),
+    trip: val("tripField"),
+    personalPhone: val("personalPhoneField"),
+    childFullName: val("childFullNameField"),
+    childBirthDate: val("childBirthDateField"),
+    childAge: val("childAgeField"),
+    childDaaira: val("childDaairaField"),
+    childBaladiya: val("childBaladiyaField"),
+    schoolName: val("childSchoolField"),
+    isOrphan: val("isOrphanField"),
+    category: val("categoryField")
+  };
+}
+
+function prepareReceiptData(raw = {}, options = {}) {
+  const normalize = (value) => {
+    if (value === undefined || value === null) return "";
+    return String(value).trim();
+  };
+
+  const data = {
+    empId: normalize(raw.empId || raw.empIdField),
+    name: normalize(raw.name || raw.fullName),
+    grade: normalize(raw.grade || raw.rank),
+    place: normalize(raw.place || raw.workPlace),
+    daira: normalize(raw.daira || raw.daaira || raw.district),
+    baladiya: normalize(raw.baladiya || raw.municipality),
+    trip: normalize(raw.trip || raw.tripField),
+    personalPhone: normalize(raw.personalPhone || raw.phone || raw.managerPhone),
+    childFullName: normalize(raw.childFullName || raw.childFullNameField),
+    childBirthDate: normalize(raw.childBirthDate || raw.childBirthDateField),
+    childAge: normalize(raw.childAge || raw.childAgeField),
+    childDaaira: normalize(raw.childDaaira || raw.childDaairaField),
+    childBaladiya: normalize(raw.childBaladiya || raw.childBaladiyaField),
+    schoolName: normalize(raw.schoolName || raw.childSchoolField),
+    isOrphan: normalize(raw.isOrphan || raw.isOrphanField),
+    category: normalize(raw.category || raw.categoryField)
+  };
+
+  data.personalPhone = data.personalPhone ? formatPhoneNumber(data.personalPhone) : "";
+  data.registrationDate = options.registrationDate || raw.registrationDate || raw.date || new Date().toISOString();
+  data.modificationDate = options.modificationDate || raw.modificationDate || "";
+  data.actionSource = options.actionSource || "";
+
+  return data;
+}
+
+function renderReceiptTemplate(data = {}) {
+  const safe = (value) => escapeHtml(value || "-");
+  const registrationMoment = formatDateFromISO(data.registrationDate || new Date().toISOString());
+  const modificationMoment = data.modificationDate ? formatDateFromISO(data.modificationDate) : "";
+
+  const modificationLine = modificationMoment
+    ? `<div class="meta-item">آخر تعديل: ${safe(modificationMoment)}</div>`
+    : "";
+
+  const actionLine = data.actionSource
+    ? `<div class="meta-item">نوع العملية: ${safe(data.actionSource)}</div>`
+    : "";
+
+  return `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>وصل التسجيل - ${receiptBranding.service}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 25px;
+      background: #f2f5fb;
+      font-family: 'Cairo', sans-serif;
+      color: #1d2752;
+    }
+    .receipt-card {
+      max-width: 820px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 18px;
+      padding: 32px 36px;
+      box-shadow: 0 20px 45px rgba(13, 55, 133, 0.15);
+      border: 1px solid #e6ecff;
+    }
+    .receipt-header {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+      border-bottom: 2px solid #eef1ff;
+      padding-bottom: 18px;
+      margin-bottom: 20px;
+    }
+    .receipt-logo {
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
+    }
+    .receipt-title h1 {
+      font-size: 20px;
+      margin: 6px 0 2px;
+      color: #172042;
+    }
+    .receipt-title h2 {
+      font-size: 18px;
+      margin: 0;
+      color: #4357c8;
+    }
+    .receipt-title p {
+      margin: 2px 0;
+      font-size: 14px;
+      color: #4d5c84;
+    }
+    .receipt-subtitle {
+      text-align: center;
+      font-size: 22px;
+      margin-bottom: 15px;
+      color: #23326b;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: #f5f7ff;
+      border: 1px solid #dfe6ff;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 18px;
+    }
+    .meta-item {
+      flex: 1;
+      min-width: 180px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e2d58;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      page-break-inside: avoid;
+    }
+    table td {
+      padding: 10px 0;
+      border-bottom: 1px dashed #d9def0;
+      font-size: 15px;
+    }
+    table td.label {
+      color: #5b6592;
+      width: 38%;
+      font-weight: 600;
+    }
+    table tr:last-child td {
+      border-bottom: none;
+    }
+    .print-hint {
+      text-align: center;
+      margin-top: 25px;
+      font-size: 14px;
+      color: #4c5a88;
+    }
+    .print-btn {
+      margin-top: 12px;
+      background: linear-gradient(45deg, #6a11cb, #2575fc);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      font-family: 'Cairo', sans-serif;
+    }
+    @media print {
+      body {
+        margin: 0;
+        padding: 10px;
+        background: #fff;
+      }
+      .receipt-card {
+        max-width: 100%;
+        margin: 0;
+        padding: 15px 20px;
+        box-shadow: none;
+        border: none;
+        page-break-inside: avoid;
+      }
+      .receipt-header {
+        gap: 15px;
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+      }
+      .receipt-logo {
+        width: 80px;
+        height: 80px;
+      }
+      .receipt-title h1 {
+        font-size: 16px;
+        margin: 4px 0 1px;
+      }
+      .receipt-title h2 {
+        font-size: 14px;
+      }
+      .receipt-title p {
+        margin: 1px 0;
+        font-size: 11px;
+      }
+      .receipt-subtitle {
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+      .meta {
+        gap: 8px;
+        padding: 10px;
+        margin-bottom: 12px;
+      }
+      .meta-item {
+        font-size: 12px;
+        min-width: 150px;
+      }
+      table {
+        page-break-inside: avoid;
+      }
+      table tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      table td {
+        padding: 6px 0;
+        font-size: 13px;
+      }
+      table td.label {
+        width: 35%;
+      }
+      .print-hint {
+        display: none;
+      }
+      .print-btn {
+        display: none;
+      }
+      @page {
+        size: A4;
+        margin: 0.5cm;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt-card">
+    <div class="receipt-header">
+      <img src="${receiptBranding.logoUrl}" alt="شعار اللجنة" class="receipt-logo">
+      <div class="receipt-title">
+        <p>${receiptBranding.govTitle}</p>
+        <p>${receiptBranding.ministry}</p>
+        <p>${receiptBranding.directorate}</p>
+        <h1>${receiptBranding.committee}</h1>
+        <h2>${receiptBranding.service}</h2>
+        <p>${receiptBranding.addressLine}</p>
+        <p>${receiptBranding.contactLine}</p>
+      </div>
+    </div>
+    <h3 class="receipt-subtitle">وصل تسجيل  ابناء القطاع (الموظفين) في المخيم الصيفي</h3>
+    <div class="meta">
+      <div class="meta-item">تاريخ التسجيل: ${safe(registrationMoment)}</div>
+      ${modificationLine}
+      
+    </div>
+    <table>
+      <tbody>
+        <tr>
+          <td class="label">رقم التعريف</td>
+          <td>${safe(data.empId)}</td>
+        </tr>
+        <tr>
+          <td class="label">الاسم واللقب</td>
+          <td>${safe(data.name)}</td>
+        </tr>
+        <tr>
+          <td class="label">الرتبة</td>
+          <td>${safe(data.grade)}</td>
+        </tr>
+        <tr>
+          <td class="label">مكان العمل</td>
+          <td>${safe(data.place)}</td>
+        </tr>
+        <tr>
+          <td class="label">دائرة العمل</td>
+          <td>${safe(data.daira)}</td>
+        </tr>
+        <tr>
+          <td class="label">بلدية العمل</td>
+          <td>${safe(data.baladiya)}</td>
+        </tr>
+        <tr>
+          <td class="label">رقم الهاتف</td>
+          <td style="direction:ltr;unicode-bidi:bidi-override;text-align:right;">${safe(data.personalPhone)}</td>
+        </tr>
+        <tr><td class="label">الاسم الكامل للإبن</td><td>${safe(data.childFullName)}</td></tr>
+        <tr><td class="label">تاريخ ميلاد الإبن</td><td>${safe(data.childBirthDate)}</td></tr>
+        <tr><td class="label">دائرة التمدرس</td><td>${safe(data.childDaaira)}</td></tr>
+        <tr><td class="label">بلدية التمدرس</td><td>${safe(data.childBaladiya)}</td></tr>
+        <tr><td class="label">مؤسسة الدراسة</td><td>${safe(data.schoolName)}</td></tr>
+        <tr><td class="label">المستوى الدراسي</td><td>${safe(data.category)}</td></tr>
+        <tr><td class="label">المعدل السنوي</td><td>${safe(data.childAge)}</td></tr>
+        <tr><td class="label">الحالة (يتيم)</td><td>${safe(data.isOrphan)}</td></tr>
+        <tr><td class="label">الرحلة</td><td>${safe(data.trip)}</td></tr>
+      </tbody>
+    </table>
+    <div class="print-hint">
+      يمكن طباعة الوصل أو حفظه بصيغة PDF عبر زر الطباعة في الأسفل.
+      <br>
+      <button class="print-btn" onclick="window.print()">طباعة الوصل</button>
+    </div>
+  </div>
+</body>
+</html>
+`;
+}
+
+function openReceiptPreview(rawData = {}, options = {}) {
+  const normalized = prepareReceiptData(rawData, options);
+  const receiptHTML = renderReceiptTemplate(normalized);
+  const receiptWindow = window.open("", "_blank");
+
+  if (!receiptWindow) {
+    Swal.fire("تنبيه", "يرجى السماح بفتح النوافذ المنبثقة لتحميل الوصل", "warning");
+    return;
+  }
+
+  receiptWindow.document.open();
+  receiptWindow.document.write(receiptHTML);
+  receiptWindow.document.close();
+  receiptWindow.focus();
+}
+
+function attachReceiptButton(buttonId, rawData = {}, options = {}) {
+  const btn = document.getElementById(buttonId);
+  if (!btn) return;
+
+  btn.addEventListener("click", (event) => {
+    event.preventDefault();
+    openReceiptPreview(rawData, options);
+  });
+}
+
+
+
+/* تحقق من الإيميل */
+function validateEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(String(email).toLowerCase());
+}
+
+function validateGmail(input) {
+  // إزالة المسافات
+  input.value = input.value.replace(/\s/g, '');
+  
+  // منع الحروف العربية
+  input.value = input.value.replace(/[\u0600-\u06FF]/g, '');
+  
+  // إجبار النص على حروف صغيرة
+  input.value = input.value.toLowerCase();
+  
+  // السماح فقط بـ gmail
+  if (!input.value.endsWith("@gmail.com") && input.value.length > 0) {
+    input.setCustomValidity("يُسمح فقط بحسابات gmail");
+  } else {
+    input.setCustomValidity("");
+  }
+}
+
+
+async function submitForm() {
+  const submitBtn = document.getElementById("submitBtn");
+  submitBtn.disabled = true;
+  submitBtn.style.opacity = 0.6;
+
+  const showLoadingDialog = () => {
+    Swal.fire({
+      title: isEditMode ? 'جاري حفظ التعديلات...' : 'جاري تسجيل البيانات...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+  };
+
+  const empId = document.getElementById("empIdField").value.trim();
+  const name = document.getElementById("nameField").value.trim();
+  const grade = document.getElementById("gradeField").value.trim();
+  const place = document.getElementById("placeField").value.trim();
+  const daaira = document.getElementById("daairaField").value.trim();
+  const baladiya = document.getElementById("baladiyaField").value.trim();
+  const trip = document.getElementById("tripField").value.trim();
+  const personalPhone = document.getElementById("personalPhoneField").value.trim();
+  const childFullName = document.getElementById("childFullNameField").value.trim();
+  const childBirthDate = document.getElementById("childBirthDateField").value.trim();
+  const childAge = document.getElementById("childAgeField").value.trim();
+  const childDaaira = document.getElementById("childDaairaField") ? document.getElementById("childDaairaField").value.trim() : "";
+  const childBaladiya = document.getElementById("childBaladiyaField") ? document.getElementById("childBaladiyaField").value.trim() : "";
+  const schoolName = document.getElementById("childSchoolField") ? document.getElementById("childSchoolField").value.trim() : "";
+  const isOrphan = document.getElementById("isOrphanField") ? document.getElementById("isOrphanField").value.trim() : "لا";
+  const category = document.getElementById("categoryField").value.trim();
+
+  const requiredFields = [
+    { id: "daairaField", value: daaira },
+    { id: "baladiyaField", value: baladiya },
+    { id: "personalPhoneField", value: personalPhone },
+    { id: "childFullNameField", value: childFullName },
+    { id: "childBirthDateField", value: childBirthDate },
+    { id: "childDaairaField", value: childDaaira },    
+    { id: "childBaladiyaField", value: childBaladiya },  
+    { id: "categoryField", value: category },
+    { id: "childSchoolField", value: schoolName },     
+    { id: "tripField", value: trip }
+  ];
+
+  let missing = false;
+  requiredFields.forEach(f => {
+    const el = document.getElementById(f.id);
+    const isEmpty = f.value === "" || f.value === undefined || f.value === null;
+    if (el && isEmpty) {
+      el.style.border = "2px solid red";
+      missing = true;
+      setTimeout(() => el.style.border = "", 3000); // بعد 3 ثوانٍ يعود لطبيعته
+    }
+  });
+
+  if (missing) {
+    Swal.close();
+    Swal.fire({
+      icon: "warning",
+      title: "تنبيه",
+      text: "الرجاء ملء جميع الحقول المطلوبة قبل التسجيل",
+      confirmButtonText: "حسناً"
+    });
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = 1;
+    return;
+  }
+
+  const personalPhoneDigits = personalPhone.replace(/\s/g, '');
+  if (personalPhoneDigits.length !== 10) {
+    Swal.close();
+    Swal.fire("تنبيه", "رقم الهاتف يجب أن يحتوي على 10 أرقام", "warning");
+    submitBtn.disabled = false;
+    submitBtn.style.opacity = 1;
+    return;
+  }
+
+const averageValue = parseFloat(childAge);
+  if (isNaN(averageValue) || averageValue < 1 || averageValue > 20) {
+    Swal.close(); 
+    Swal.fire({ 
+      icon: "warning", 
+      title: "تنبيه", 
+      text: "يرجى إدخال معدل صحيح بين 1 و 20", 
+    });
+    submitBtn.disabled = false; 
+    submitBtn.style.opacity = 1; 
+    return;
+  }
+
+// ✅ التحقق النهائي من السن قبل الإرسال (حظر الإرسال إذا كان خارج 7 - 12)
+  const finalBirthDateStr = document.getElementById("childBirthDateField").value;
+  if (finalBirthDateStr) {
+      const bDate = new Date(finalBirthDateStr);
+      const tDate = new Date();
+      let calcAge = tDate.getFullYear() - bDate.getFullYear();
+      const mDiff = tDate.getMonth() - bDate.getMonth();
+      if (mDiff < 0 || (mDiff === 0 && tDate.getDate() < bDate.getDate())) { calcAge--; }
+
+      if (calcAge < 7 || calcAge > 12) {
+          Swal.close();
+          Swal.fire({
+              icon: "error",
+              title: "عذراً.. لا يمكن إتمام التسجيل",
+              text: `سن الإبن الحالي هو (${calcAge} سنة). السن المسموح به قانونياً هو من 7 إلى 12 سنة فقط.`,
+              confirmButtonText: "حسناً"
+          });
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = 1;
+          return; // إيقاف العملية بالكامل
+      }
+  }
+
+  showLoadingDialog();
+
+  // ✅ التحقق من المستفيدين السابقين قبل إرسال البيانات (حماية إضافية)
+  if (!isEditMode) {
+    try {
+      const beneficiaryParams = new URLSearchParams();
+      beneficiaryParams.append("action", "check_previous_beneficiary");
+      beneficiaryParams.append("empId", empId);
+      beneficiaryParams.append("loanType", "exceptional");
+
+      const beneficiaryRes = await fetch(scriptURL, {
+        method: "POST",
+        body: beneficiaryParams
+      });
+      const beneficiaryResult = await beneficiaryRes.json();
+
+      if (beneficiaryResult.result === "previous_beneficiary") {
+        Swal.close();
+        Swal.fire({
+          title: "⚠️ لا يمكنك التسجيل",
+          html: `
+            <div style="text-align:center;direction:rtl;font-family:'Cairo',sans-serif;">
+              <p style="color:#2c5aa0;font-weight:700;margin-bottom:10px;font-size:18px;">
+                ${escapeHtml(name || 'الموظف')}
+              </p>
+              <p style="color:#dc3545;font-weight:600;margin-bottom:15px;">
+                ${beneficiaryResult.message || 'أنت مستفيد(ة) من الرحلات السابقة'}
+              </p>
+              <p style="color:#666;font-size:14px;">
+               لا يحقّ للموظف الذي استفاد من رحلات الخدمات الاجتماعية خلال السنة نفسها إعادة التسجيل في البرنامج مرة أخرى، وذلك عملاً بالأحكام المعمول بها.
+              </p>
+            </div>
+          `,
+          icon: "error",
+          confirmButtonText: "حسناً",
+          confirmButtonColor: "#dc3545"
+        });
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = 1;
+        return;
+      }
+    } catch (err) {
+      console.error("check_previous_beneficiary error:", err);
+      // في حالة الخطأ، نتابع التسجيل (لا نمنع المستخدم)
+    }
+  }
+
+  // ✅ إعداد البيانات مع action=register أو update
+  const params = new URLSearchParams();
+  
+  params.append("action", isEditMode ? "update" : "register");
+  params.append("empId", empId);
+  params.append("loanType", "exceptional");
+  params.append("name", name);
+  params.append("grade", grade);
+  params.append("place", place);
+  params.append("daira", daaira);
+  params.append("baladiya", baladiya);
+  params.append("trip", trip);
+  params.append("personalPhone", personalPhone);
+  params.append("childFullName", childFullName);
+  params.append("childBirthDate", childBirthDate);
+  params.append("childAge", childAge);
+  params.append("childDaaira", childDaaira);
+  params.append("childBaladiya", childBaladiya);
+  params.append("schoolName", schoolName);
+  params.append("isOrphan", isOrphan);
+  params.append("category", category);
+  
+  // ✅ إضافة تاريخ التعديل فقط في وضع التعديل
+  if (isEditMode) {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const modificationDate = `${hours}:${minutes}:${seconds} ll ${year}-${month}-${day}`;
+    currentModificationDate = modificationDate; // حفظ تاريخ التعديل الحالي
+    params.append("modificationDate", modificationDate);
+  } else {
+    currentModificationDate = null; // إعادة تعيين عند التسجيل الجديد
+  }
+
+  // ✅ الرسالة معروضة بالفعل من البداية، لا حاجة لإعادة عرضها
+
+  try {
+    const res = await fetch(scriptURL, {
+      method: "POST",
+      body: params
+    });
+    const data = await res.json();
+
+    // تسجيل الاستجابة للتشخيص
+    console.log("Response from server:", data);
+    console.log("Is edit mode:", isEditMode);
+    console.log("Action sent:", isEditMode ? "update" : "register");
+
+if (data.result === "success") {
+  const receiptButtonId = isEditMode ? "editReceiptBtn" : "registerReceiptBtn";
+  const submittedSnapshot = snapshotFormValues();
+  const receiptOptions = {
+    actionSource: isEditMode ? "تعديل بيانات" : "تسجيل جديد",
+    registrationDate: isEditMode 
+      ? (originalRegistrationDate || data.date || new Date().toISOString())
+      : (data.date || new Date().toISOString()),
+    modificationDate: isEditMode 
+      ? (data.modificationDate || currentModificationDate || "")
+      : ""
+  };
+
+  Swal.fire({
+    title: isEditMode ? "✅ تم حفظ التعديلات بنجاح" : "✅ تم التسجيل بنجاح",
+    html: `
+      <p style="margin-bottom:12px;">
+        ${isEditMode ? "تم تحديث بياناتك في قائمة تسجيلات المخيم الصيفي لأبناء القطاع لهذه السنة بنجاح" : "تم تسجيل بياناتك في قائمة تسجيلات المخيم الصيفي لأبناء القطاع لهذه السنة بنجاح"}
+      </p>
+      <button type="button" class="receipt-download-btn" id="${receiptButtonId}">تحميل وصل التسجيل</button>
+    `,
+    icon: "success",
+    confirmButtonText: "إغلاق",
+    didOpen: () => {
+      attachReceiptButton(receiptButtonId, submittedSnapshot, receiptOptions);
+    }
+  }).then(() => {
+    location.reload(); // عند الإغلاق يعيد تحميل الصفحة فقط
+  });
+
+} else if (data.result === "exists") {
+  const d = data.data || {};
+
+  } else if (data.result === "exists") {
+  const d = data.data || {};
+
+  Swal.fire({
+    title: "⚠️ التسجيل موجود مسبقًا",
+    html: `
+      <div style="text-align:right;direction:rtl;font-family:'Cairo',sans-serif; line-height: 1.8;">
+        <b>رقم التعريف:</b> ${d.empId || ''}<br>
+        <b>الاسم واللقب:</b> ${d.name || ''}<br>
+        <b>الرتبة:</b> ${d.grade || ''}<br>
+        <b>مكان العمل:</b> ${d.place || ''}<br>
+        <b>رقم الهاتف:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatPhoneNumber(d.personalPhone || '')}</span><br>
+        <b>دائرة العمل:</b> ${d.daira || ''}<br>
+        <b>بلدية العمل:</b> ${d.baladiya || ''}<br>
+        <hr style="border:0; border-top:1px dashed #ccc; margin:8px 0;">
+        <b>الاسم الكامل للإبن:</b> ${d.childFullName || ''}<br>
+        <b>تاريخ ميلاد الإبن:</b> ${formatToDayMonthYear(d.childBirthDate || '')}<br>
+        <b>الحالة (يتيم):</b> ${d.isOrphan || ''}<br>
+        <b>دائرة التمدرس:</b> ${d.childDaaira || ''}<br>
+        <b>بلدية التمدرس:</b> ${d.childBaladiya || ''}<br>
+        <b>المستوى الدراسي:</b> ${d.category || ''}<br>
+        <b>مؤسسة الدراسة:</b> ${d.schoolName || ''}<br>
+        <b>المعدل السنوي:</b> ${d.childAge || ''}<br>
+        <b>الرحلة:</b> ${d.trip || ''}<br>
+        <hr style="border:0; border-top:1px dashed #ccc; margin:8px 0;">
+        <b>تاريخ التسجيل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.date || '')}</span>${d.modificationDate ? `<br><b>تاريخ التعديل:</b> <span style="direction:ltr;unicode-bidi:bidi-override;display:inline-block;text-align:left;">${formatDateFromISO(d.modificationDate || '')}</span>` : ''}
+      </div>
+      <button type="button" class="receipt-download-btn" id="receiptExistsSubmitBtn">تحميل وصل التسجيل</button>
+    `,
+    icon: "warning",
+
+    confirmButtonText: "إغلاق",
+    didOpen: () => {
+      attachReceiptButton("receiptExistsSubmitBtn", d, {
+        actionSource: "محاولة تسجيل مكررة",
+        registrationDate: d.date,
+        modificationDate: d.modificationDate
+      });
+    }
+  }).then(() => location.reload());
+
+} else if (data.result === "email_exists") {
+  Swal.fire({
+    icon: "warning",
+    title: "⚠️ البريد الإلكتروني مستعمل",
+    text: "هذا البريد الإلكتروني مسجل مسبقًا. يرجى استخدام بريد آخر.",
+    confirmButtonText: "حسنًا"
+  });
+
+  // ✅ إعادة تفعيل زر التسجيل بعد التحذير
+  submitBtn.disabled = false;
+  submitBtn.style.opacity = 1;
+
+
+
+} else if (data.result === "phone_exists") {
+  Swal.fire({
+    icon: "warning",
+    title: "⚠️ رقم هاتف الموظف مستعمل",
+    text: "رقم هاتف الموظف مسجل مسبقًا. يرجى التحقق من الرقم.",
+    confirmButtonText: "حسنًا"
+  });
+
+  // ✅ إعادة تفعيل زر التسجيل بعد التحذير
+  submitBtn.disabled = false;
+  submitBtn.style.opacity = 1;
+
+} else if (data.result === "previous_beneficiary") {
+  Swal.fire({
+    title: "⚠️ لا يمكنك التسجيل",
+    html: `
+      <div style="text-align:center;direction:rtl;font-family:'Cairo',sans-serif;">
+        <p style="color:#2c5aa0;font-weight:700;margin-bottom:10px;font-size:18px;">
+          ${escapeHtml(name || 'الموظف')}
+        </p>
+        <p style="color:#dc3545;font-weight:600;margin-bottom:15px;">
+          ${data.message || 'أنت مستفيد(ة) من الرحلات السابقة'}
+        </p>
+        <p style="color:#666;font-size:14px;">
+         لا يحقّ للموظف الذي استفاد من رحلات الخدمات الاجتماعية خلال السنة نفسها إعادة التسجيل في البرنامج مرة أخرى، وذلك عملاً بالأحكام المعمول بها.
+        </p>
+      </div>
+    `,
+    icon: "error",
+    confirmButtonText: "حسناً",
+    confirmButtonColor: "#dc3545"
+  });
+
+  // ✅ إعادة تفعيل زر التسجيل
+  submitBtn.disabled = false;
+  submitBtn.style.opacity = 1;
+
+} else {
+  // عرض تفاصيل الخطأ للمساعدة في التشخيص
+  const errorMsg = data.message || data.error || "تعذر إرسال البيانات";
+  console.error("Error response:", data);
+  Swal.fire({
+    icon: "error",
+    title: "❌ خطأ",
+    text: errorMsg + (isEditMode ? "أعد المحاولة من جديد" : ""),
+    footer: isEditMode ? "أعد المحاولة من جديد" : ""
+  });
+  submitBtn.disabled = false;
+  submitBtn.style.opacity = 1;
+}
+
+
+  } catch (error) {
+    console.error("Fetch error:", error);
+    Swal.fire({
+      icon: "error",
+      title: "❌ خطأ",
+      text: "فشل الاتصال بخدمة التسجيل: " + error.message,
+      footer: isEditMode ? "أعد المحاولة من جديد" : ""
+    });
+    submitBtn.disabled = false; 
+    submitBtn.style.opacity = 1;
+  }
+}
+
+// دالة حذف التسجيل من Google Sheet
+async function deleteRegistration(empId) {
+  // طلب تأكيد من المستخدم قبل الحذف
+  const confirmResult = await Swal.fire({
+    title: "⚠️ تأكيد الحذف",
+    text: "هل أنت متأكد من حذف هذا التسجيل؟ لا يمكن التراجع عن هذه العملية.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "نعم، احذف",
+    cancelButtonText: "إلغاء",
+    confirmButtonColor: "#dc3545",
+    cancelButtonColor: "#6c757d"
+  });
+
+  if (!confirmResult.isConfirmed) {
+    return; // المستخدم ألغى العملية
+  }
+
+  Swal.fire({ 
+    title: 'جاري حذف التسجيل...', 
+    allowOutsideClick: false, 
+    didOpen: () => Swal.showLoading() 
+  });
+
+  try {
+    const params = new URLSearchParams();
+    params.append("action", "delete");
+    params.append("empId", empId);
+    params.append("loanType", "exceptional"); // ✅ نوع السلفة: استثنائية
+
+    const res = await fetch(scriptURL, {
+      method: "POST",
+      body: params
+    });
+
+    const data = await res.json();
+
+    if (data.result === "success") {
+      Swal.fire({
+        title: "✅ تم الحذف بنجاح",
+        text: "تم حذف تسجيلك من قائمة تسجيلات المخيم الصيفي لأبناء القطاع لهذه السنة بنجاح",
+        icon: "success",
+        confirmButtonText: "حسنًا"
+      }).then(() => {
+        location.reload(); // إعادة تحميل الصفحة بعد الحذف
+      });
+    } else if (data.result === "not_found") {
+      Swal.fire({
+        title: "⚠️ لم يتم العثور على التسجيل",
+        text: "التسجيل غير موجود في قاعدة البيانات",
+        icon: "warning",
+        confirmButtonText: "حسنًا"
+      });
+    } else {
+      const errorMsg = data.message || data.error || "تعذر حذف التسجيل";
+      Swal.fire({
+        icon: "error",
+        title: "❌ خطأ",
+        text: errorMsg,
+        confirmButtonText: "حسنًا"
+      });
+    }
+  } catch (error) {
+    console.error("Delete error:", error);
+    Swal.fire({
+      icon: "error",
+      title: "❌ خطأ",
+      text: "فشل الاتصال بخدمة الحذف: " + error.message,
+      confirmButtonText: "حسنًا"
+    });
+  }
+}    
+
+ // 🔒 تحكم في فتح وغلق التسجيل من هنا
+  const registrationOpen = true; // ← غيّر إلى true عند الفتح
+
+ window.onload = function() {
+    const container = document.querySelector(".container");
+    const empInput = document.getElementById("empId");
+    const checkBtn = container.querySelector("button");
+
+    if (!registrationOpen) {
+      // إخفاء حقل الإدخال وزر التحقق
+      empInput.style.display = "none";
+      checkBtn.style.display = "none";
+
+      // إضافة رسالة الإغلاق
+      const msg = document.createElement("div");
+      msg.innerHTML = `
+        <div style="
+          background: #f8d7da;
+          color: #721c24;
+          border: 1px solid #f5c6cb;
+          border-radius: 10px;
+          padding: 15px;
+          margin-top: 0px;
+          margin-bottom: 20px;
+          font-size: 20px;
+          font-weight: 600;">
+           التسجيل مغلق حاليًا<br>سيتم إعلامكم عند فتحه إن شاء الله...
+        </div>`;
+      container.appendChild(msg);
+    } else {
+      // ✅ [إضافة الدخول التلقائي هنا]
+      // إذا كان التسجيل مفتوحاً، نبحث عن الرقم المحفوظ في الصفحة الرئيسية
+      const savedGlobalId = localStorage.getItem("globalEmpId");
+      if (savedGlobalId) {
+        empInput.value = savedGlobalId;
+        // إطلاق دالة التحقق تلقائياً بعد نصف ثانية ليتمكن المتصفح من رسم الصفحة أولاً
+        setTimeout(() => {
+          checkEmployee();
+        }, 500);
+      }
+    }
+  }; 
+
+
+  // كود ماسح الباركود
+
+let scanner = null;
+
+function startBarcodeScanner() {
+    const readerDiv = document.getElementById("reader");
+    const imageInput = document.getElementById("barcodeImage");
+
+    // إظهار زر رفع الصورة
+    imageInput.style.display = "block";
+
+    // تنظيف الإطار
+    readerDiv.innerHTML = "";
+    readerDiv.style.display = "block";
+
+    // منع إنشاء ماسح جديد إذا كان يعمل
+    if (scanner) return;
+
+    scanner = new Html5Qrcode("reader");
+
+    // تشغيل الكاميرا الخلفية
+    scanner.start(
+        { facingMode: { exact: "environment" } },
+        { fps: 12, qrbox: 250 },
+        decodedText => {
+
+            // 📳 اهتزاز عند قراءة الكود
+            if (navigator.vibrate) navigator.vibrate(200);
+
+            document.getElementById("empId").value = decodedText;
+
+            scanner.stop().then(() => {
+                scanner = null;
+                readerDiv.style.display = "none";
+                imageInput.style.display = "none";
+            });
+
+            checkEmployee();
+        }
+    ).catch(() => {
+        // اختيار أي كاميرا متاحة عند الفشل
+        Html5Qrcode.getCameras().then(cameras => {
+            if (!cameras.length) {
+                Swal.fire("خطأ", "لا توجد كاميرات متاحة", "error");
+                return;
+            }
+
+            // تفضيل الكاميرا الخلفية
+            const backCam = cameras.find(c =>
+                c.label.toLowerCase().includes("back") ||
+                c.label.toLowerCase().includes("rear")
+            );
+
+            const camToUse = backCam ? backCam.id : cameras[0].id;
+
+            scanner.start(
+                camToUse,
+                { fps: 12, qrbox: 250 },
+                decodedText => {
+
+                    if (navigator.vibrate) navigator.vibrate(200);
+
+                    document.getElementById("empId").value = decodedText;
+
+                    scanner.stop().then(() => {
+                        scanner = null;
+                        readerDiv.style.display = "none";
+                        imageInput.style.display = "none";
+                    });
+
+                    checkEmployee();
+                }
+            );
+        });
+    });
+
+    // ================================
+    // 🖼 مسح باركود من الصورة — بدون عرض الصورة نهائيًا
+    // ================================
+  imageInput.onchange = function (e) {
+    let file = e.target.files[0];
+    if (!file) return;
+
+    // إظهار اللودر
+    document.getElementById("imageLoaderOverlay").style.display = "flex";
+
+    // إزالة أي محتوى داخل الماسح
+    readerDiv.innerHTML = "";
+
+    // إنشاء div مؤقت للفحص
+    let hiddenDiv = document.createElement("div");
+    hiddenDiv.id = "temp-file-scan";
+    hiddenDiv.style.display = "none";
+    document.body.appendChild(hiddenDiv);
+
+    const fileScanner = new Html5Qrcode("temp-file-scan");
+
+    fileScanner.scanFile(file, true)
+        .then(decodedText => {
+
+            // اهتزاز عند النجاح
+            if (navigator.vibrate) navigator.vibrate(200);
+
+            document.getElementById("empId").value = decodedText;
+
+            document.body.removeChild(hiddenDiv);
+
+            // إيقاف الكاميرا إذا تعمل
+            if (scanner) scanner.stop().then(() => scanner = null);
+
+            readerDiv.style.display = "none";
+            imageInput.value = "";
+            imageInput.style.display = "none";
+
+            // إخفاء اللودر
+            document.getElementById("imageLoaderOverlay").style.display = "none";
+
+            checkEmployee();
+        })
+        .catch(() => {
+
+            document.body.removeChild(hiddenDiv);
+
+            // إخفاء اللودر
+            document.getElementById("imageLoaderOverlay").style.display = "none";
+
+            Swal.fire("تنبيه", "لم يتم العثور على باركود واضح في الصورة", "warning")
+                .then(() => location.reload());
+        });
+};
+}
+
+
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
